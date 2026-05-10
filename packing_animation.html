@@ -1,0 +1,554 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Packing Animation</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&family=Noto+Sans+SC:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    :root {
+      --bg: #0a0a0f;
+      --surface: #12121a;
+      --text: #e8e8f0;
+      --text-2: #8888a0;
+      --blue: #4f8fff;
+      --purple: #a855f7;
+      --green: #34d399;
+      --orange: #fb923c;
+      --pink: #f472b6;
+      --font: 'Inter', 'Noto Sans SC', system-ui, sans-serif;
+    }
+    body { background: var(--bg); font-family: var(--font); color: var(--text); overflow: hidden; width: 100vw; height: 100vh; }
+    .scene { width: 100%; height: 100%; position: relative; display: flex; align-items: center; justify-content: center; }
+
+    /* === NODES === */
+    .node {
+      position: absolute;
+      width: 100px; height: 100px;
+      border-radius: 22px;
+      display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px;
+      font-size: 0.78rem; font-weight: 600;
+      border: 1px solid rgba(255,255,255,0.08);
+      cursor: pointer;
+      transition: none;
+      z-index: 10;
+    }
+    .node-icon { font-size: 1.8rem; }
+
+    .node-0 { background: rgba(79,143,255,0.12); color: var(--blue); }
+    .node-1 { background: rgba(168,85,247,0.12); color: var(--purple); }
+    .node-2 { background: rgba(52,211,153,0.12); color: var(--green); }
+    .node-3 { background: rgba(251,146,60,0.12); color: var(--orange); }
+    .node-4 { background: rgba(244,114,182,0.12); color: var(--pink); }
+
+    /* Initial positions — arc layout */
+    .node[data-phase="spread"] {
+      transition: all 1.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    /* Move to center cluster */
+    .node[data-phase="cluster"] {
+      transition: all 0.8s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    /* Pack into box */
+    .node[data-phase="pack"] {
+      transition: all 0.6s cubic-bezier(0.55, 0.055, 0.675, 0.19);
+    }
+
+    /* === BOX === */
+    .box {
+      position: absolute;
+      width: 0; height: 0;
+      border-radius: 16px;
+      background: var(--surface);
+      border: 2px solid rgba(255,255,255,0.15);
+      z-index: 20;
+      display: flex; align-items: center; justify-content: center;
+      opacity: 0;
+      overflow: hidden;
+    }
+    .box[data-phase="open"] {
+      width: 220px; height: 180px;
+      opacity: 1;
+      transition: all 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    .box[data-phase="closing"] {
+      width: 220px; height: 180px;
+      opacity: 1;
+      transition: all 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+    .box[data-phase="shrink"] {
+      width: 80px; height: 80px;
+      opacity: 1;
+      border-radius: 20px;
+      transition: all 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+    .box[data-phase="app"] {
+      width: 80px; height: 80px;
+      opacity: 1;
+      border-radius: 20px;
+      border: 2px solid rgba(79,143,255,0.3);
+      background: linear-gradient(135deg, rgba(79,143,255,0.2), rgba(168,85,247,0.2));
+      transition: all 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    /* Box lid */
+    .box-lid {
+      position: absolute; top: -8px; left: 10%; width: 80%; height: 12px;
+      background: rgba(255,255,255,0.1); border-radius: 6px 6px 0 0;
+      transform-origin: bottom left;
+    }
+    .box[data-phase="closing"] .box-lid {
+      animation: lidClose 0.5s 0.8s ease forwards;
+    }
+    .box[data-phase="shrink"] .box-lid,
+    .box[data-phase="app"] .box-lid {
+      opacity: 0;
+    }
+    @keyframes lidClose {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(-120deg); }
+    }
+
+    /* Box tape */
+    .box-tape {
+      position: absolute; top: 50%; left: 0; width: 100%; height: 3px;
+      background: rgba(79,143,255,0.3); transform: translateY(-50%);
+      opacity: 0;
+    }
+    .box[data-phase="closing"] .box-tape {
+      animation: tapeOn 0.4s 1.2s ease forwards;
+    }
+    .box[data-phase="shrink"] .box-tape,
+    .box[data-phase="app"] .box-tape {
+      opacity: 0;
+    }
+    @keyframes tapeOn {
+      from { opacity: 0; transform: translateY(-50%) scaleX(0); }
+      to { opacity: 1; transform: translateY(-50%) scaleX(1); }
+    }
+
+    /* App icon content */
+    .app-icon-content {
+      position: absolute; inset: 0;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      opacity: 0; transition: opacity 0.4s 0.3s ease;
+    }
+    .box[data-phase="app"] .app-icon-content { opacity: 1; }
+    .app-emoji { font-size: 2rem; }
+    .app-name { font-size: 0.55rem; font-weight: 700; margin-top: 4px; letter-spacing: 0.05em; }
+
+    /* === TAPE STRIP === */
+    .tape-strip {
+      position: absolute;
+      height: 3px; background: var(--blue); border-radius: 2px;
+      opacity: 0; z-index: 25;
+    }
+    .tape-strip[data-phase="on"] {
+      opacity: 0.6;
+      transition: all 0.4s ease;
+    }
+
+    /* === SPARKLES === */
+    .sparkle {
+      position: absolute; width: 6px; height: 6px; border-radius: 50%;
+      opacity: 0; z-index: 30; pointer-events: none;
+    }
+    .sparkle.pop {
+      animation: sparklePop 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+    }
+    @keyframes sparklePop {
+      0% { opacity: 0; transform: scale(0); }
+      40% { opacity: 1; transform: scale(1.5); }
+      100% { opacity: 0; transform: scale(0) translateY(-30px); }
+    }
+
+    /* === MAGNETIC LINES === */
+    .magnetic-line {
+      position: absolute; height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(79,143,255,0.3), transparent);
+      opacity: 0; z-index: 5; pointer-events: none;
+      transform-origin: left center;
+    }
+    .magnetic-line.active {
+      animation: magneticFlash 0.6s ease forwards;
+    }
+    @keyframes magneticFlash {
+      0% { opacity: 0; }
+      30% { opacity: 1; }
+      100% { opacity: 0; }
+    }
+
+    /* === GLOW RING === */
+    .glow-ring {
+      position: absolute; width: 0; height: 0; border-radius: 50%;
+      border: 2px solid var(--blue); opacity: 0; z-index: 15; pointer-events: none;
+    }
+    .glow-ring.expand {
+      animation: ringExpand 0.8s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+    }
+    @keyframes ringExpand {
+      0% { width: 0; height: 0; opacity: 0.6; }
+      100% { width: 300px; height: 300px; opacity: 0; margin-left: -150px; margin-top: -150px; }
+    }
+
+    /* === FLOATING BADGE === */
+    .app-badge {
+      position: absolute; bottom: -60px; left: 50%; transform: translateX(-50%);
+      opacity: 0; z-index: 30; text-align: center;
+    }
+    .app-badge.show {
+      animation: badgeUp 0.6s 0.3s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+    }
+    @keyframes badgeUp {
+      from { opacity: 0; transform: translateX(-50%) translateY(20px); }
+      to { opacity: 1; transform: translateX(-50%) translateY(0); }
+    }
+    .app-badge h3 {
+      font-size: 1.2rem; font-weight: 800;
+      background: linear-gradient(135deg, var(--blue), var(--purple));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    }
+    .app-badge p { color: var(--text-2); font-size: 0.8rem; margin-top: 4px; }
+
+    /* === FLOATING ANIMATION === */
+    .float {
+      animation: gentleFloat 3s ease-in-out infinite;
+    }
+    @keyframes gentleFloat {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-8px); }
+    }
+
+    /* === CONTROLS === */
+    .controls {
+      position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%);
+      display: flex; gap: 12px; z-index: 100;
+    }
+    .btn {
+      padding: 10px 24px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.1);
+      background: var(--surface); color: var(--text); font-family: var(--font);
+      font-size: 0.85rem; font-weight: 600; cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .btn:hover { border-color: var(--blue); color: var(--blue); }
+    .btn.primary { background: rgba(79,143,255,0.15); border-color: rgba(79,143,255,0.3); color: var(--blue); }
+    .btn:active { transform: scale(0.97); }
+
+    /* Phase label */
+    .phase-label {
+      position: fixed; top: 30px; left: 50%; transform: translateX(-50%);
+      font-size: 0.85rem; color: var(--text-2); font-weight: 600;
+      letter-spacing: 0.1em; text-transform: uppercase; z-index: 100;
+      opacity: 0; transition: opacity 0.3s ease;
+    }
+    .phase-label.show { opacity: 1; }
+
+    /* Subtitle */
+    .subtitle {
+      position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%);
+      font-size: 0.9rem; color: var(--text-2); z-index: 100;
+      opacity: 0; transition: opacity 0.4s ease; text-align: center;
+      max-width: 500px;
+    }
+    .subtitle.show { opacity: 1; }
+
+    /* Grid background */
+    .grid-bg {
+      position: absolute; inset: 0; opacity: 0.025;
+      background-image: radial-gradient(circle, var(--text) 1px, transparent 1px);
+      background-size: 40px 40px; pointer-events: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="scene" id="scene">
+    <div class="grid-bg"></div>
+
+    <div class="node node-0" id="node-0" data-phase="spread">
+      <span class="node-icon">📚</span>Capture
+    </div>
+    <div class="node node-1" id="node-1" data-phase="spread">
+      <span class="node-icon">🧠</span>Process
+    </div>
+    <div class="node node-2" id="node-2" data-phase="spread">
+      <span class="node-icon">💬</span>Practice
+    </div>
+    <div class="node node-3" id="node-3" data-phase="spread">
+      <span class="node-icon">📊</span>Evaluate
+    </div>
+    <div class="node node-4" id="node-4" data-phase="spread">
+      <span class="node-icon">🔁</span>Iterate
+    </div>
+
+    <div class="box" id="box">
+      <div class="box-lid"></div>
+      <div class="box-tape"></div>
+      <div class="app-icon-content">
+        <div class="app-emoji">🎓</div>
+        <div class="app-name">Study OS</div>
+      </div>
+    </div>
+
+    <div class="glow-ring" id="glow"></div>
+
+    <div class="app-badge" id="badge">
+      <h3>OneZion Study OS</h3>
+      <p>All 5 stages · One app · Zero friction</p>
+    </div>
+  </div>
+
+  <div class="phase-label" id="phaseLabel">Ready</div>
+  <div class="subtitle" id="subtitle"></div>
+
+  <div class="controls">
+    <button class="btn" onclick="resetAnim()">↺ Reset</button>
+    <button class="btn primary" onclick="nextPhase()">Next Phase →</button>
+    <button class="btn" onclick="playAll()">▶ Play All</button>
+  </div>
+
+  <script>
+    const nodes = [0,1,2,3,4].map(i => document.getElementById(`node-${i}`));
+    const box = document.getElementById('box');
+    const glow = document.getElementById('glow');
+    const badge = document.getElementById('badge');
+    const phaseLabel = document.getElementById('phaseLabel');
+    const subtitle = document.getElementById('subtitle');
+    const scene = document.getElementById('scene');
+
+    let currentPhase = 0;
+    let isPlaying = false;
+
+    // Arc positions
+    const spreadPos = [
+      { x: -280, y: -100 },
+      { x: -140, y: -160 },
+      { x: 0,    y: -180 },
+      { x: 140,  y: -160 },
+      { x: 280,  y: -100 },
+    ];
+
+    // Cluster positions (close together)
+    const clusterPos = [
+      { x: -70, y: -50 },
+      { x: 30,  y: -60 },
+      { x: -20, y: 20 },
+      { x: 60,  y: 10 },
+      { x: -60, y: 50 },
+    ];
+
+    // Pack positions (inside box)
+    const packPos = [
+      { x: -30, y: -15 },
+      { x: 15,  y: -20 },
+      { x: -10, y: 10 },
+      { x: 25,  y: 5 },
+      { x: -15, y: 25 },
+    ];
+
+    function setNodePos(node, x, y, scale, opacity) {
+      node.style.left = `calc(50% + ${x}px - 50px)`;
+      node.style.top = `calc(50% + ${y}px - 50px)`;
+      if (scale !== undefined) node.style.transform = `scale(${scale})`;
+      if (opacity !== undefined) node.style.opacity = opacity;
+    }
+
+    function showLabel(text, sub) {
+      phaseLabel.textContent = text;
+      phaseLabel.classList.add('show');
+      subtitle.textContent = sub || '';
+      subtitle.classList.toggle('show', !!sub);
+    }
+
+    function hideLabel() {
+      phaseLabel.classList.remove('show');
+      subtitle.classList.remove('show');
+    }
+
+    function spawnSparkles(cx, cy, color, count) {
+      for (let i = 0; i < count; i++) {
+        const s = document.createElement('div');
+        s.className = 'sparkle';
+        s.style.background = color;
+        const angle = (Math.PI * 2 / count) * i;
+        const dist = 60 + Math.random() * 80;
+        s.style.left = `calc(50% + ${cx + Math.cos(angle) * dist}px)`;
+        s.style.top = `calc(50% + ${cy + Math.sin(angle) * dist}px)`;
+        scene.appendChild(s);
+        setTimeout(() => s.classList.add('pop'), Math.random() * 200);
+        setTimeout(() => s.remove(), 800);
+      }
+    }
+
+    function spawnGlowRing(cx, cy) {
+      const g = document.createElement('div');
+      g.className = 'glow-ring';
+      g.style.left = `calc(50% + ${cx}px)`;
+      g.style.top = `calc(50% + ${cy}px)`;
+      scene.appendChild(g);
+      setTimeout(() => g.classList.add('expand'), 50);
+      setTimeout(() => g.remove(), 1000);
+    }
+
+    // PHASE 0: Spread (initial state)
+    function phase0() {
+      showLabel('Phase 0 — The Pipeline', '5 disconnected tools, scattered across your desktop');
+      nodes.forEach((n, i) => {
+        n.style.transition = 'all 1s cubic-bezier(0.34, 1.56, 0.64, 1)';
+        n.style.opacity = '1';
+        n.style.transform = 'scale(1)';
+        setNodePos(n, spreadPos[i].x, spreadPos[i].y);
+      });
+      box.dataset.phase = '';
+      box.style.opacity = '0';
+      box.style.width = '0';
+      box.style.height = '0';
+      badge.classList.remove('show');
+    }
+
+    // PHASE 1: Cluster — nodes drift toward center
+    function phase1() {
+      showLabel('Phase 1 — Converge', 'The pipeline starts to connect...');
+      nodes.forEach((n, i) => {
+        n.style.transition = 'all 0.8s cubic-bezier(0.22, 1, 0.36, 1)';
+        setNodePos(n, clusterPos[i].x, clusterPos[i].y);
+      });
+      // Magnetic lines
+      setTimeout(() => {
+        for (let i = 0; i < 4; i++) {
+          const line = document.createElement('div');
+          line.className = 'magnetic-line';
+          const cx1 = clusterPos[i].x, cy1 = clusterPos[i].y;
+          const cx2 = clusterPos[i+1].x, cy2 = clusterPos[i+1].y;
+          const dx = cx2 - cx1, dy = cy2 - cy1;
+          const len = Math.sqrt(dx*dx + dy*dy);
+          const angle = Math.atan2(dy, dx) * 180 / Math.PI;
+          line.style.left = `calc(50% + ${cx1}px)`;
+          line.style.top = `calc(50% + ${cy1}px)`;
+          line.style.width = `${len}px`;
+          line.style.transform = `rotate(${angle}deg)`;
+          scene.appendChild(line);
+          setTimeout(() => line.classList.add('active'), i * 100);
+          setTimeout(() => line.remove(), 800 + i * 100);
+        }
+      }, 300);
+    }
+
+    // PHASE 2: Pack — nodes shrink into box area, box appears
+    function phase2() {
+      showLabel('Phase 2 — Pack', 'Everything goes into one box');
+      // Box opens
+      setTimeout(() => {
+        box.dataset.phase = 'open';
+      }, 200);
+      // Nodes shrink and move into box
+      setTimeout(() => {
+        nodes.forEach((n, i) => {
+          n.style.transition = 'all 0.6s cubic-bezier(0.55, 0.055, 0.675, 0.19)';
+          n.style.transform = 'scale(0.5)';
+          n.style.opacity = '0.6';
+          setNodePos(n, packPos[i].x, packPos[i].y);
+        });
+      }, 500);
+      // Nodes disappear
+      setTimeout(() => {
+        nodes.forEach(n => {
+          n.style.transition = 'all 0.4s ease';
+          n.style.opacity = '0';
+          n.style.transform = 'scale(0.2)';
+        });
+      }, 1200);
+    }
+
+    // PHASE 3: Close — box closes, tapes, shrinks
+    function phase3() {
+      showLabel('Phase 3 — Seal', 'Tape it up. Ship it.');
+      // Box closing animation
+      setTimeout(() => {
+        box.dataset.phase = 'closing';
+      }, 200);
+      // Box shrinks
+      setTimeout(() => {
+        box.dataset.phase = 'shrink';
+      }, 1800);
+      // Sparkles around the box
+      setTimeout(() => {
+        spawnSparkles(0, -40, '#4f8fff', 8);
+        spawnGlowRing(0, -40);
+      }, 2000);
+    }
+
+    // PHASE 4: App icon — box transforms into app icon
+    function phase4() {
+      showLabel('Phase 4 — App Icon', 'One app. Five stages. Zero friction.');
+      setTimeout(() => {
+        box.dataset.phase = 'app';
+        // Float animation
+        box.classList.add('float');
+      }, 300);
+      // More sparkles
+      setTimeout(() => {
+        spawnSparkles(0, -40, '#a855f7', 12);
+        spawnSparkles(0, -40, '#4f8fff', 8);
+        spawnGlowRing(0, -40);
+      }, 500);
+      // Badge appears
+      setTimeout(() => {
+        badge.classList.add('show');
+      }, 800);
+    }
+
+    const phases = [phase0, phase1, phase2, phase3, phase4];
+
+    function nextPhase() {
+      if (currentPhase < phases.length) {
+        phases[currentPhase]();
+        currentPhase++;
+      }
+    }
+
+    function resetAnim() {
+      currentPhase = 0;
+      isPlaying = false;
+      hideLabel();
+      // Reset everything
+      nodes.forEach(n => {
+        n.style.transition = 'none';
+        n.style.opacity = '0';
+        n.style.transform = 'scale(0)';
+      });
+      box.dataset.phase = '';
+      box.style.opacity = '0';
+      box.style.width = '0';
+      box.style.height = '0';
+      box.classList.remove('float');
+      badge.classList.remove('show');
+      // Clear sparkles
+      document.querySelectorAll('.sparkle, .magnetic-line, .glow-ring').forEach(el => el.remove());
+      // Reset box inner
+      setTimeout(() => {
+        box.innerHTML = '<div class="box-lid"></div><div class="box-tape"></div><div class="app-icon-content"><div class="app-emoji">🎓</div><div class="app-name">Study OS</div></div>';
+      }, 50);
+    }
+
+    function playAll() {
+      resetAnim();
+      isPlaying = true;
+      let i = 0;
+      function run() {
+        if (i < phases.length && isPlaying) {
+          phases[i]();
+          i++;
+          setTimeout(run, 2200);
+        }
+      }
+      setTimeout(run, 300);
+    }
+
+    // Init
+    phase0();
+  </script>
+</body>
+</html>

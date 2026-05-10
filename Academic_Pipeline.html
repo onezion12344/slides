@@ -1,0 +1,695 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Academic Pipeline → App</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Noto+Sans+SC:wght@400;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0a0a0f;
+      --surface: #12121a;
+      --surface-2: #1a1a28;
+      --border: rgba(255,255,255,0.06);
+      --text: #e8e8f0;
+      --text-2: #8888a0;
+      --text-3: #555570;
+      --blue: #4f8fff;
+      --blue-glow: rgba(79,143,255,0.15);
+      --purple: #a855f7;
+      --purple-glow: rgba(168,85,247,0.15);
+      --green: #34d399;
+      --green-glow: rgba(52,211,153,0.15);
+      --orange: #fb923c;
+      --orange-glow: rgba(251,146,60,0.15);
+      --pink: #f472b6;
+      --pink-glow: rgba(244,114,182,0.15);
+      --cyan: #22d3ee;
+      --font: 'Inter', 'Noto Sans SC', system-ui, sans-serif;
+      --mono: 'JetBrains Mono', monospace;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body { background: var(--bg); font-family: var(--font); color: var(--text); overflow-x: hidden; }
+
+    /* === PRESENTATION CONTAINER === */
+    .deck { width: 100vw; height: 100vh; overflow: hidden; position: relative; }
+    .slide {
+      width: 100%; height: 100%; display: none;
+      flex-direction: column; justify-content: center; align-items: center;
+      padding: 60px 80px; position: absolute; top: 0; left: 0;
+      background: var(--bg);
+    }
+    .slide.active { display: flex; }
+
+    /* === TRANSITIONS === */
+    @keyframes slideUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes slideRight { from { opacity: 0; transform: translateX(-40px); } to { opacity: 1; transform: translateX(0); } }
+    @keyframes scaleIn { from { opacity: 0; transform: scale(0.9); } to { opacity: 1; transform: scale(1); } }
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    @keyframes popIn { 0% { opacity: 0; transform: scale(0.6); } 60% { transform: scale(1.08); } 100% { opacity: 1; transform: scale(1); } }
+    @keyframes bounceIn { 0% { opacity: 0; transform: scale(0) rotate(-5deg); } 50% { transform: scale(1.1) rotate(1deg); } 70% { transform: scale(0.95) rotate(-0.5deg); } 100% { opacity: 1; transform: scale(1) rotate(0); } }
+    @keyframes drawLine { from { stroke-dashoffset: 1000; } to { stroke-dashoffset: 0; } }
+    @keyframes pulseGlow { 0%, 100% { box-shadow: 0 0 0 0 rgba(79,143,255,0); } 50% { box-shadow: 0 0 20px 4px rgba(79,143,255,0.2); } }
+    @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
+    @keyframes shimmer { 0% { background-position: -200% center; } 100% { background-position: 200% center; } }
+    @keyframes flowPulse {
+      0% { opacity: 0.2; }
+      50% { opacity: 1; }
+      100% { opacity: 0.2; }
+    }
+
+    .slide.active { animation: fadeIn 0.4s ease both; }
+
+    /* === TYPOGRAPHY === */
+    h1 { font-size: 3.5rem; font-weight: 800; letter-spacing: -0.03em; line-height: 1.1; }
+    h2 { font-size: 2.4rem; font-weight: 700; letter-spacing: -0.02em; }
+    h3 { font-size: 1.4rem; font-weight: 600; }
+    .mono { font-family: var(--mono); }
+    .text-2 { color: var(--text-2); }
+    .text-3 { color: var(--text-3); }
+
+    /* === COVER === */
+    .cover { background: radial-gradient(ellipse at 50% 40%, rgba(79,143,255,0.08) 0%, transparent 60%); }
+    .cover.active h1 { animation: slideUp 0.7s 0.1s cubic-bezier(0.22,1,0.36,1) both; }
+    .cover.active .cover-sub { animation: slideUp 0.6s 0.3s cubic-bezier(0.22,1,0.36,1) both; }
+    .cover.active .cover-line { animation: fadeIn 0.5s 0.5s ease both; }
+    .cover.active .cover-grid { animation: fadeIn 0.8s 0.6s ease both; }
+    .cover-badge {
+      display: inline-block; padding: 6px 18px; border-radius: 100px;
+      background: var(--blue-glow); border: 1px solid rgba(79,143,255,0.25);
+      color: var(--blue); font-size: 0.85rem; font-weight: 600; letter-spacing: 0.05em;
+    }
+
+    /* === PIPELINE NODES === */
+    .pipeline-container {
+      display: flex; align-items: center; gap: 0; width: 100%; max-width: 1200px;
+      justify-content: center;
+    }
+    .pipe-node {
+      display: flex; flex-direction: column; align-items: center; gap: 12px;
+      position: relative; opacity: 0; flex-shrink: 0;
+    }
+    .slide.active .pipe-node:nth-child(1) { animation: bounceIn 0.5s 0.2s cubic-bezier(0.34,1.56,0.64,1) both; }
+    .slide.active .pipe-node:nth-child(2) { animation: bounceIn 0.5s 0.4s cubic-bezier(0.34,1.56,0.64,1) both; }
+    .slide.active .pipe-node:nth-child(3) { animation: bounceIn 0.5s 0.6s cubic-bezier(0.34,1.56,0.64,1) both; }
+    .slide.active .pipe-node:nth-child(4) { animation: bounceIn 0.5s 0.8s cubic-bezier(0.34,1.56,0.64,1) both; }
+    .slide.active .pipe-node:nth-child(5) { animation: bounceIn 0.5s 1.0s cubic-bezier(0.34,1.56,0.64,1) both; }
+    .slide.active .pipe-node:nth-child(6) { animation: bounceIn 0.5s 1.2s cubic-bezier(0.34,1.56,0.64,1) both; }
+
+    .pipe-icon {
+      width: 72px; height: 72px; border-radius: 20px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 2rem; position: relative;
+      border: 1px solid var(--border);
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    .pipe-icon:hover { transform: scale(1.1); }
+
+    .pipe-label {
+      font-size: 0.85rem; font-weight: 600; text-align: center;
+      max-width: 100px; line-height: 1.3;
+    }
+    .pipe-sublabel {
+      font-size: 0.72rem; color: var(--text-3); text-align: center;
+      max-width: 110px; line-height: 1.3; font-family: var(--mono);
+    }
+
+    /* Flow arrows between nodes */
+    .pipe-arrow {
+      width: 48px; height: 2px; position: relative; flex-shrink: 0;
+      opacity: 0;
+    }
+    .pipe-arrow::before {
+      content: ''; position: absolute; top: 0; left: 0;
+      width: 100%; height: 100%; background: var(--text-3); border-radius: 1px;
+    }
+    .pipe-arrow::after {
+      content: ''; position: absolute; top: -3px; right: -1px;
+      border: 4px solid transparent; border-left: 6px solid var(--text-3);
+    }
+    .slide.active .pipe-arrow:nth-of-type(2) { animation: fadeIn 0.3s 0.35s ease both; }
+    .slide.active .pipe-arrow:nth-of-type(4) { animation: fadeIn 0.3s 0.55s ease both; }
+    .slide.active .pipe-arrow:nth-of-type(6) { animation: fadeIn 0.3s 0.75s ease both; }
+    .slide.active .pipe-arrow:nth-of-type(8) { animation: fadeIn 0.3s 0.95s ease both; }
+    .slide.active .pipe-arrow:nth-of-type(10) { animation: fadeIn 0.3s 1.15s ease both; }
+
+    /* Flow dots animation on arrows */
+    .pipe-arrow .flow-dot {
+      position: absolute; top: -2px; width: 6px; height: 6px;
+      border-radius: 50%; background: var(--blue);
+      animation: flowDot 1.5s ease-in-out infinite;
+    }
+    @keyframes flowDot {
+      0% { left: 0; opacity: 0; }
+      20% { opacity: 1; }
+      80% { opacity: 1; }
+      100% { left: calc(100% - 6px); opacity: 0; }
+    }
+
+    /* Node color variants */
+    .node-blue .pipe-icon { background: var(--blue-glow); border-color: rgba(79,143,255,0.2); }
+    .node-purple .pipe-icon { background: var(--purple-glow); border-color: rgba(168,85,247,0.2); }
+    .node-green .pipe-icon { background: var(--green-glow); border-color: rgba(52,211,153,0.2); }
+    .node-orange .pipe-icon { background: var(--orange-glow); border-color: rgba(251,146,60,0.2); }
+    .node-pink .pipe-icon { background: var(--pink-glow); border-color: rgba(244,114,182,0.2); }
+    .node-cyan .pipe-icon { background: rgba(34,211,238,0.1); border-color: rgba(34,211,238,0.2); }
+
+    /* === STEP SLIDES === */
+    .step-layout { display: flex; gap: 60px; width: 100%; max-width: 1100px; align-items: center; }
+    .step-left { flex: 1; }
+    .step-right { flex: 1; display: flex; justify-content: center; }
+
+    .step-num {
+      font-size: 6rem; font-weight: 900; line-height: 1;
+      background: linear-gradient(135deg, var(--blue), var(--purple));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text; opacity: 0.3; position: absolute; top: -20px; left: -10px;
+    }
+    .step-badge {
+      display: inline-block; padding: 4px 14px; border-radius: 6px;
+      font-size: 0.8rem; font-weight: 600; letter-spacing: 0.05em;
+      margin-bottom: 12px;
+    }
+
+    /* Tool cards */
+    .tool-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 16px; padding: 28px; position: relative; overflow: hidden;
+    }
+    .tool-card::before {
+      content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px;
+      background: linear-gradient(90deg, transparent, var(--blue), transparent);
+      opacity: 0.5;
+    }
+    .tool-card h3 { margin-bottom: 8px; }
+    .tool-card p { color: var(--text-2); font-size: 0.95rem; line-height: 1.6; }
+
+    .tool-list { list-style: none; padding: 0; margin-top: 16px; }
+    .tool-list li {
+      padding: 10px 0; border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; gap: 10px; font-size: 0.95rem;
+    }
+    .tool-list li:last-child { border-bottom: none; }
+    .tool-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+
+    /* Stagger for step content */
+    .slide.active .step-left h2 { animation: slideUp 0.5s 0.15s cubic-bezier(0.22,1,0.36,1) both; }
+    .slide.active .step-left .step-badge { animation: slideUp 0.4s 0.1s cubic-bezier(0.22,1,0.36,1) both; }
+    .slide.active .step-left p { animation: slideUp 0.5s 0.3s cubic-bezier(0.22,1,0.36,1) both; }
+    .slide.active .step-left .tool-list li:nth-child(1) { animation: slideRight 0.4s 0.4s cubic-bezier(0.22,1,0.36,1) both; }
+    .slide.active .step-left .tool-list li:nth-child(2) { animation: slideRight 0.4s 0.5s cubic-bezier(0.22,1,0.36,1) both; }
+    .slide.active .step-left .tool-list li:nth-child(3) { animation: slideRight 0.4s 0.6s cubic-bezier(0.22,1,0.36,1) both; }
+    .slide.active .step-left .tool-list li:nth-child(4) { animation: slideRight 0.4s 0.7s cubic-bezier(0.22,1,0.36,1) both; }
+    .slide.active .step-left .tool-list li:nth-child(5) { animation: slideRight 0.4s 0.8s cubic-bezier(0.22,1,0.36,1) both; }
+    .slide.active .step-right .tool-card { animation: scaleIn 0.5s 0.35s cubic-bezier(0.22,1,0.36,1) both; }
+
+    /* === MERGE SLIDE === */
+    .merge-visual {
+      display: flex; flex-direction: column; align-items: center; gap: 40px;
+      width: 100%; max-width: 1000px;
+    }
+    .merge-top { display: flex; gap: 24px; flex-wrap: wrap; justify-content: center; }
+    .merge-chip {
+      padding: 10px 20px; border-radius: 12px; font-size: 0.9rem; font-weight: 600;
+      border: 1px solid; display: flex; align-items: center; gap: 8px;
+      opacity: 0;
+    }
+    .slide.active .merge-chip:nth-child(1) { animation: popIn 0.4s 0.2s cubic-bezier(0.34,1.56,0.64,1) both; }
+    .slide.active .merge-chip:nth-child(2) { animation: popIn 0.4s 0.3s cubic-bezier(0.34,1.56,0.64,1) both; }
+    .slide.active .merge-chip:nth-child(3) { animation: popIn 0.4s 0.4s cubic-bezier(0.34,1.56,0.64,1) both; }
+    .slide.active .merge-chip:nth-child(4) { animation: popIn 0.4s 0.5s cubic-bezier(0.34,1.56,0.64,1) both; }
+    .slide.active .merge-chip:nth-child(5) { animation: popIn 0.4s 0.6s cubic-bezier(0.34,1.56,0.64,1) both; }
+
+    /* Merge arrows */
+    .merge-arrows { display: flex; justify-content: center; opacity: 0; }
+    .slide.active .merge-arrows { animation: fadeIn 0.5s 0.8s ease both; }
+    .merge-arrows svg { width: 200px; height: 60px; }
+
+    /* App result */
+    .app-result {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 24px; padding: 32px 40px; text-align: center;
+      position: relative; overflow: hidden; opacity: 0;
+      max-width: 400px;
+    }
+    .slide.active .app-result { animation: bounceIn 0.7s 1.0s cubic-bezier(0.34,1.56,0.64,1) both; }
+    .app-result::before {
+      content: ''; position: absolute; inset: 0;
+      background: linear-gradient(135deg, rgba(79,143,255,0.05), rgba(168,85,247,0.05));
+    }
+    .app-icon {
+      width: 72px; height: 72px; border-radius: 18px; margin: 0 auto 16px;
+      background: linear-gradient(135deg, var(--blue), var(--purple));
+      display: flex; align-items: center; justify-content: center;
+      font-size: 2rem; position: relative; z-index: 1;
+    }
+    .app-result h3 { position: relative; z-index: 1; font-size: 1.6rem; }
+    .app-result p { position: relative; z-index: 1; color: var(--text-2); margin-top: 8px; }
+
+    /* === PHONE MOCKUP === */
+    .phone-frame {
+      width: 280px; height: 560px; border-radius: 36px;
+      background: var(--surface); border: 2px solid rgba(255,255,255,0.1);
+      padding: 12px; position: relative; overflow: hidden;
+    }
+    .phone-notch {
+      width: 100px; height: 24px; background: var(--bg);
+      border-radius: 0 0 16px 16px; margin: 0 auto;
+    }
+    .phone-screen {
+      width: 100%; height: calc(100% - 24px); border-radius: 24px;
+      background: linear-gradient(180deg, #1a1a2e, #0f0f1a);
+      padding: 20px 16px; overflow: hidden; margin-top: 4px;
+    }
+    .phone-app-icon {
+      width: 48px; height: 48px; border-radius: 12px; margin: 0 auto 12px;
+      background: linear-gradient(135deg, var(--blue), var(--purple));
+      display: flex; align-items: center; justify-content: center; font-size: 1.2rem;
+    }
+    .phone-card {
+      background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 10px; padding: 10px 12px; margin-bottom: 8px;
+      font-size: 0.72rem; color: var(--text-2);
+    }
+    .phone-card-title { font-weight: 600; color: var(--text); font-size: 0.78rem; margin-bottom: 4px; }
+
+    .slide.active .phone-frame { animation: slideUp 0.6s 0.3s cubic-bezier(0.22,1,0.36,1) both; }
+    .slide.active .phone-card:nth-child(1) { animation: slideRight 0.3s 0.6s cubic-bezier(0.22,1,0.36,1) both; }
+    .slide.active .phone-card:nth-child(2) { animation: slideRight 0.3s 0.7s cubic-bezier(0.22,1,0.36,1) both; }
+    .slide.active .phone-card:nth-child(3) { animation: slideRight 0.3s 0.8s cubic-bezier(0.22,1,0.36,1) both; }
+    .slide.active .phone-card:nth-child(4) { animation: slideRight 0.3s 0.9s cubic-bezier(0.22,1,0.36,1) both; }
+
+    /* === STACK VISUALIZATION === */
+    .stack-container { display: flex; flex-direction: column; align-items: center; gap: 0; width: 100%; max-width: 700px; }
+    .stack-layer {
+      width: 100%; padding: 16px 24px; border-radius: 12px;
+      display: flex; align-items: center; gap: 16px;
+      border: 1px solid var(--border); position: relative;
+      opacity: 0; transition: transform 0.3s ease;
+    }
+    .stack-layer:hover { transform: scale(1.02); }
+    .stack-layer:not(:first-child) { margin-top: -8px; }
+    .slide.active .stack-layer:nth-child(1) { animation: slideUp 0.4s 0.2s cubic-bezier(0.22,1,0.36,1) both; }
+    .slide.active .stack-layer:nth-child(2) { animation: slideUp 0.4s 0.35s cubic-bezier(0.22,1,0.36,1) both; }
+    .slide.active .stack-layer:nth-child(3) { animation: slideUp 0.4s 0.5s cubic-bezier(0.22,1,0.36,1) both; }
+    .slide.active .stack-layer:nth-child(4) { animation: slideUp 0.4s 0.65s cubic-bezier(0.22,1,0.36,1) both; }
+    .slide.active .stack-layer:nth-child(5) { animation: slideUp 0.4s 0.8s cubic-bezier(0.22,1,0.36,1) both; }
+    .slide.active .stack-layer:nth-child(6) { animation: slideUp 0.4s 0.95s cubic-bezier(0.22,1,0.36,1) both; }
+
+    .stack-icon { font-size: 1.4rem; width: 40px; text-align: center; flex-shrink: 0; }
+    .stack-name { font-weight: 600; font-size: 0.95rem; flex: 1; }
+    .stack-tech { font-family: var(--mono); font-size: 0.78rem; color: var(--text-3); }
+
+    /* === NAVIGATION === */
+    .nav-hint { position: fixed; bottom: 20px; right: 30px; font-size: 0.78rem; color: var(--text-3); font-family: var(--mono); }
+    .slide-counter { position: fixed; bottom: 20px; left: 30px; font-size: 0.78rem; color: var(--text-3); font-family: var(--mono); }
+    .progress-bar { position: fixed; top: 0; left: 0; height: 2px; background: linear-gradient(90deg, var(--blue), var(--purple)); transition: width 0.3s ease; z-index: 100; }
+
+    /* === CODE BLOCK === */
+    .code-block {
+      background: var(--surface-2); border: 1px solid var(--border);
+      border-radius: 12px; padding: 20px; font-family: var(--mono);
+      font-size: 0.82rem; line-height: 1.7; overflow-x: auto;
+      color: var(--text-2);
+    }
+    .code-block .kw { color: var(--purple); }
+    .code-block .str { color: var(--green); }
+    .code-block .fn { color: var(--blue); }
+    .code-block .cm { color: var(--text-3); }
+
+    /* === GRID PATTERN === */
+    .grid-bg {
+      position: absolute; inset: 0; opacity: 0.03;
+      background-image: radial-gradient(circle, var(--text) 1px, transparent 1px);
+      background-size: 40px 40px; pointer-events: none;
+    }
+
+    /* Reduced motion */
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-delay: 0ms !important;
+        transition-duration: 0.01ms !important;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="progress-bar" id="progress"></div>
+  <div class="deck" id="deck">
+
+    <!-- ===== SLIDE 1: COVER ===== -->
+    <div class="slide cover active">
+      <div class="grid-bg"></div>
+      <span class="cover-badge" style="margin-bottom: 24px;">ACADEMIC PIPELINE</span>
+      <h1 style="text-align: center; max-width: 800px;">From Lecture Notes<br>to <span style="background: linear-gradient(135deg, var(--blue), var(--purple)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">One App</span></h1>
+      <p class="cover-sub text-2" style="font-size: 1.2rem; margin-top: 20px; text-align: center; max-width: 600px;">
+        How every step of the academic workflow connects, automates, and ships as a product.
+      </p>
+      <div class="cover-line" style="width: 60px; height: 3px; background: linear-gradient(90deg, var(--blue), var(--purple)); border-radius: 2px; margin: 28px auto;"></div>
+      <p class="text-3" style="font-size: 0.85rem;">Harry Huang · HKU · 2026</p>
+    </div>
+
+    <!-- ===== SLIDE 2: FULL PIPELINE OVERVIEW ===== -->
+    <div class="slide">
+      <div class="grid-bg"></div>
+      <h2 style="text-align: center; margin-bottom: 40px;">The Pipeline</h2>
+      <div class="pipeline-container">
+        <div class="pipe-node node-blue">
+          <div class="pipe-icon">📚</div>
+          <div class="pipe-label">Capture</div>
+          <div class="pipe-sublabel">Lecture / Reading</div>
+        </div>
+        <div class="pipe-arrow"><div class="flow-dot"></div></div>
+        <div class="pipe-node node-purple">
+          <div class="pipe-icon">🧠</div>
+          <div class="pipe-label">Process</div>
+          <div class="pipe-sublabel">Notes / Summary</div>
+        </div>
+        <div class="pipe-arrow"><div class="flow-dot"></div></div>
+        <div class="pipe-node node-green">
+          <div class="pipe-icon">💬</div>
+          <div class="pipe-label">Practice</div>
+          <div class="pipe-sublabel">Quiz / Dialogue</div>
+        </div>
+        <div class="pipe-arrow"><div class="flow-dot"></div></div>
+        <div class="pipe-node node-orange">
+          <div class="pipe-icon">📊</div>
+          <div class="pipe-label">Evaluate</div>
+          <div class="pipe-sublabel">Analysis / Feedback</div>
+        </div>
+        <div class="pipe-arrow"><div class="flow-dot"></div></div>
+        <div class="pipe-node node-pink">
+          <div class="pipe-icon">🔁</div>
+          <div class="pipe-label">Iterate</div>
+          <div class="pipe-sublabel">Refine / Retain</div>
+        </div>
+        <div class="pipe-arrow"><div class="flow-dot"></div></div>
+        <div class="pipe-node node-cyan">
+          <div class="pipe-icon">🚀</div>
+          <div class="pipe-label">Ship</div>
+          <div class="pipe-sublabel">Product / SaaS</div>
+        </div>
+      </div>
+      <p class="text-2" style="margin-top: 40px; text-align: center; font-size: 1rem; max-width: 700px;">
+        Each stage feeds the next. No dead ends. No manual handoffs.
+      </p>
+    </div>
+
+    <!-- ===== SLIDE 3: CAPTURE ===== -->
+    <div class="slide">
+      <div class="grid-bg"></div>
+      <div class="step-layout">
+        <div class="step-left" style="position: relative;">
+          <span class="step-badge" style="background: var(--blue-glow); color: var(--blue); border: 1px solid rgba(79,143,255,0.25);">STEP 01</span>
+          <h2 style="margin-bottom: 12px;">Capture</h2>
+          <p class="text-2" style="font-size: 1.05rem; margin-bottom: 20px;">
+            Every piece of knowledge enters the system once. Never copy-paste between apps.
+          </p>
+          <ul class="tool-list">
+            <li><span class="tool-dot" style="background: var(--blue);"></span> Screen recording + audio → Screenpipe 24/7</li>
+            <li><span class="tool-dot" style="background: var(--purple);"></span> Lecture slides → PDF extraction (pymupdf)</li>
+            <li><span class="tool-dot" style="background: var(--green);"></span> Web research → Exa / Perplexity / WebFetch</li>
+            <li><span class="tool-dot" style="background: var(--orange);"></span> WhatsApp / WeChat → chatlog_alpha</li>
+            <li><span class="tool-dot" style="background: var(--pink);"></span> Voice thoughts → MiMo TTS/STT pipeline</li>
+          </ul>
+        </div>
+        <div class="step-right">
+          <div class="tool-card" style="width: 360px;">
+            <div style="font-size: 2.5rem; margin-bottom: 12px;">📚</div>
+            <h3>Input Sources</h3>
+            <p>Screen, voice, PDF, web, chat — everything funnels into a single structured memory layer.</p>
+            <div style="margin-top: 16px; padding: 12px; background: var(--surface-2); border-radius: 8px; font-family: var(--mono); font-size: 0.78rem; color: var(--text-3);">
+              capture() → memory/ → process()
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== SLIDE 4: PROCESS ===== -->
+    <div class="slide">
+      <div class="grid-bg"></div>
+      <div class="step-layout">
+        <div class="step-left" style="position: relative;">
+          <span class="step-badge" style="background: var(--purple-glow); color: var(--purple); border: 1px solid rgba(168,85,247,0.25);">STEP 02</span>
+          <h2 style="margin-bottom: 12px;">Process</h2>
+          <p class="text-2" style="font-size: 1.05rem; margin-bottom: 20px;">
+            Raw input becomes structured knowledge. LLM does the heavy lifting.
+          </p>
+          <ul class="tool-list">
+            <li><span class="tool-dot" style="background: var(--purple);"></span> Lecture → Markdown notes (NeoVim + LuaSnip)</li>
+            <li><span class="tool-dot" style="background: var(--blue);"></span> Paper → argument map (CLAPS / LARA framework)</li>
+            <li><span class="tool-dot" style="background: var(--green);"></span> Video → structured summary (onezion-video-summarize)</li>
+            <li><span class="tool-dot" style="background: var(--orange);"></span> Concept → ontology graph (knowledge-base skill)</li>
+          </ul>
+        </div>
+        <div class="step-right">
+          <div class="tool-card" style="width: 360px;">
+            <div style="font-size: 2.5rem; margin-bottom: 12px;">🧠</div>
+            <h3>Knowledge Engine</h3>
+            <p>Not just note-taking — building a structured, queryable knowledge graph that connects concepts across courses.</p>
+            <div style="margin-top: 16px; padding: 12px; background: var(--surface-2); border-radius: 8px; font-family: var(--mono); font-size: 0.78rem; color: var(--text-3);">
+              raw_input → LLM → structured_notes → graph
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== SLIDE 5: PRACTICE ===== -->
+    <div class="slide">
+      <div class="grid-bg"></div>
+      <div class="step-layout">
+        <div class="step-left" style="position: relative;">
+          <span class="step-badge" style="background: var(--green-glow); color: var(--green); border: 1px solid rgba(52,211,153,0.25);">STEP 03</span>
+          <h2 style="margin-bottom: 12px;">Practice</h2>
+          <p class="text-2" style="font-size: 1.05rem; margin-bottom: 20px;">
+            Knowledge without practice is fiction. AI-powered active recall.
+          </p>
+          <ul class="tool-list">
+            <li><span class="tool-dot" style="background: var(--green);"></span> DSE Oral → ElevenLabs ConvAI (3 modes)</li>
+            <li><span class="tool-dot" style="background: var(--blue);"></span> DSE Listening → MiMo TTS batch generation</li>
+            <li><span class="tool-dot" style="background: var(--purple);"></span> Logic/Philosophy → Grill-Me Socratic questioning</li>
+            <li><span class="tool-dot" style="background: var(--orange);"></span> Coding → ChatLab conversation analysis</li>
+          </ul>
+        </div>
+        <div class="step-right">
+          <div class="tool-card" style="width: 360px;">
+            <div style="font-size: 2.5rem; margin-bottom: 12px;">💬</div>
+            <h3>Active Recall Engine</h3>
+            <p>LLM as practice partner. Not passive reading — dialogue, quiz, debate. The 23% utilization gap closes here.</p>
+            <div style="margin-top: 16px; padding: 12px; background: var(--surface-2); border-radius: 8px; font-family: var(--mono); font-size: 0.78rem; color: var(--text-3);">
+              notes → generate_questions → user_reply → feedback
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== SLIDE 6: EVALUATE ===== -->
+    <div class="slide">
+      <div class="grid-bg"></div>
+      <div class="step-layout">
+        <div class="step-left" style="position: relative;">
+          <span class="step-badge" style="background: var(--orange-glow); color: var(--orange); border: 1px solid rgba(251,146,60,0.25);">STEP 04</span>
+          <h2 style="margin-bottom: 12px;">Evaluate</h2>
+          <p class="text-2" style="font-size: 1.05rem; margin-bottom: 20px;">
+            Measure what matters. Data-driven learning, not gut feeling.
+          </p>
+          <ul class="tool-list">
+            <li><span class="tool-dot" style="background: var(--orange);"></span> ChatLab → sycophancy detection + LARA benchmark</li>
+            <li><span class="tool-dot" style="background: var(--blue);"></span> Superforecasting → calibration tracking</li>
+            <li><span class="tool-dot" style="background: var(--green);"></span> Rize.io → time allocation analysis</li>
+            <li><span class="tool-dot" style="background: var(--purple);"></span> Memory → cross-session knowledge retention</li>
+          </ul>
+        </div>
+        <div class="step-right">
+          <div class="tool-card" style="width: 360px;">
+            <div style="font-size: 2.5rem; margin-bottom: 12px;">📊</div>
+            <h3>Feedback Loop</h3>
+            <p>Every practice session generates data. The system learns what you know, what you don't, and where you're overconfident.</p>
+            <div style="margin-top: 16px; padding: 12px; background: var(--surface-2); border-radius: 8px; font-family: var(--mono); font-size: 0.78rem; color: var(--text-3);">
+              session_data → analysis → weak_spots → adjust()
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== SLIDE 7: ITERATE ===== -->
+    <div class="slide">
+      <div class="grid-bg"></div>
+      <div class="step-layout">
+        <div class="step-left" style="position: relative;">
+          <span class="step-badge" style="background: var(--pink-glow); color: var(--pink); border: 1px solid rgba(244,114,182,0.25);">STEP 05</span>
+          <h2 style="margin-bottom: 12px;">Iterate</h2>
+          <p class="text-2" style="font-size: 1.05rem; margin-bottom: 20px;">
+            The loop closes. Weak spots become next session's focus. Knowledge compounds.
+          </p>
+          <ul class="tool-list">
+            <li><span class="tool-dot" style="background: var(--pink);"></span> Spaced repetition → automations (cron)</li>
+            <li><span class="tool-dot" style="background: var(--blue);"></span> Memory hygiene → distill + prune old notes</li>
+            <li><span class="tool-dot" style="background: var(--green);"></span> Self-improvement → error pattern tracking</li>
+            <li><span class="tool-dot" style="background: var(--orange);"></span> Darwin skill → auto-optimize workflows</li>
+          </ul>
+        </div>
+        <div class="step-right">
+          <div class="tool-card" style="width: 360px;">
+            <div style="font-size: 2.5rem; margin-bottom: 12px;">🔁</div>
+            <h3>Compound Learning</h3>
+            <p>Each cycle makes the next one faster. The system gets smarter about <em>you</em> — your patterns, your gaps, your style.</p>
+            <div style="margin-top: 16px; padding: 12px; background: var(--surface-2); border-radius: 8px; font-family: var(--mono); font-size: 0.78rem; color: var(--text-3);">
+              evaluate() → identify_gaps → focus_next → evaluate()
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== SLIDE 8: MERGE INTO APP ===== -->
+    <div class="slide">
+      <div class="grid-bg"></div>
+      <h2 style="text-align: center; margin-bottom: 8px;">Pack Everything Into One App</h2>
+      <p class="text-2" style="text-align: center; margin-bottom: 36px; font-size: 1rem;">Every pipeline stage becomes a feature. Every tool becomes an API.</p>
+
+      <div class="merge-visual">
+        <div class="merge-top">
+          <div class="merge-chip" style="background: var(--blue-glow); border-color: rgba(79,143,255,0.25); color: var(--blue);">📚 Capture</div>
+          <div class="merge-chip" style="background: var(--purple-glow); border-color: rgba(168,85,247,0.25); color: var(--purple);">🧠 Process</div>
+          <div class="merge-chip" style="background: var(--green-glow); border-color: rgba(52,211,153,0.25); color: var(--green);">💬 Practice</div>
+          <div class="merge-chip" style="background: var(--orange-glow); border-color: rgba(251,146,60,0.25); color: var(--orange);">📊 Evaluate</div>
+          <div class="merge-chip" style="background: var(--pink-glow); border-color: rgba(244,114,182,0.25); color: var(--pink);">🔁 Iterate</div>
+        </div>
+
+        <div class="merge-arrows">
+          <svg viewBox="0 0 200 60" fill="none">
+            <path d="M20 10 Q100 50 180 10" stroke="var(--blue)" stroke-width="1.5" stroke-dasharray="4 4" opacity="0.5"/>
+            <path d="M40 15 Q100 45 160 15" stroke="var(--purple)" stroke-width="1.5" stroke-dasharray="4 4" opacity="0.5"/>
+            <path d="M60 20 Q100 40 140 20" stroke="var(--green)" stroke-width="1.5" stroke-dasharray="4 4" opacity="0.5"/>
+            <path d="M80 25 Q100 35 120 25" stroke="var(--orange)" stroke-width="1.5" stroke-dasharray="4 4" opacity="0.5"/>
+            <path d="M100 5 L100 30" stroke="var(--pink)" stroke-width="2" marker-end="url(#arrowhead)"/>
+            <defs><marker id="arrowhead" markerWidth="8" markerHeight="6" refX="4" refY="3" orient="auto"><path d="M0 0 L4 3 L0 6" fill="var(--pink)"/></marker></defs>
+          </svg>
+        </div>
+
+        <div class="app-result">
+          <div class="app-icon">🎓</div>
+          <h3 style="background: linear-gradient(135deg, var(--blue), var(--purple)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">OneZion Study OS</h3>
+          <p>Capture → Learn → Practice → Assess → Improve<br>All in one place.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== SLIDE 9: TECH STACK ===== -->
+    <div class="slide">
+      <div class="grid-bg"></div>
+      <div class="step-layout">
+        <div class="step-left">
+          <h2 style="margin-bottom: 20px;">The Stack</h2>
+          <p class="text-2" style="font-size: 1rem; margin-bottom: 24px;">Every layer is already running. This isn't a plan — it's a migration.</p>
+          <div class="stack-container">
+            <div class="stack-layer" style="background: rgba(79,143,255,0.08); border-color: rgba(79,143,255,0.15);">
+              <span class="stack-icon">🖥️</span>
+              <span class="stack-name">Frontend</span>
+              <span class="stack-tech">HTML / CSS / JS · Electron · Mini Program</span>
+            </div>
+            <div class="stack-layer" style="background: rgba(168,85,247,0.08); border-color: rgba(168,85,247,0.15);">
+              <span class="stack-icon">⚡</span>
+              <span class="stack-name">API Layer</span>
+              <span class="stack-tech">WorkBuddy Skills · MCP Servers · REST</span>
+            </div>
+            <div class="stack-layer" style="background: rgba(52,211,153,0.08); border-color: rgba(52,211,153,0.15);">
+              <span class="stack-icon">🤖</span>
+              <span class="stack-name">AI Agents</span>
+              <span class="stack-tech">MiMo · ElevenLabs ConvAI · LLM Orchestration</span>
+            </div>
+            <div class="stack-layer" style="background: rgba(251,146,60,0.08); border-color: rgba(251,146,60,0.15);">
+              <span class="stack-icon">💾</span>
+              <span class="stack-name">Data</span>
+              <span class="stack-tech">Markdown · SQLite · Vector DB · Notion</span>
+            </div>
+            <div class="stack-layer" style="background: rgba(244,114,182,0.08); border-color: rgba(244,114,182,0.15);">
+              <span class="stack-icon">🔧</span>
+              <span class="stack-name">Infra</span>
+              <span class="stack-tech">Fly.io · Modal · GitHub Actions · Cron</span>
+            </div>
+            <div class="stack-layer" style="background: rgba(34,211,238,0.08); border-color: rgba(34,211,238,0.15);">
+              <span class="stack-icon">📱</span>
+              <span class="stack-name">Distribution</span>
+              <span class="stack-tech">Web App · WeChat Mini Program · Desktop</span>
+            </div>
+          </div>
+        </div>
+        <div class="step-right">
+          <div class="phone-frame">
+            <div class="phone-notch"></div>
+            <div class="phone-screen">
+              <div class="phone-app-icon">🎓</div>
+              <div style="text-align: center; font-weight: 700; font-size: 0.85rem; margin-bottom: 14px;">Study OS</div>
+              <div class="phone-card">
+                <div class="phone-card-title">📚 Today's Capture</div>
+                3 lecture notes · 1 paper · 2 voice memos
+              </div>
+              <div class="phone-card">
+                <div class="phone-card-title">💬 Practice Queue</div>
+                PHIL1068 Logic — 5 problems due
+              </div>
+              <div class="phone-card">
+                <div class="phone-card-title">📊 Weekly Report</div>
+                Study: 18h · Focus: 82% · Gaps: 2 topics
+              </div>
+              <div class="phone-card">
+                <div class="phone-card-title">🔁 Next Review</div>
+                MATH2121 Set Theory — tomorrow 9am
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== SLIDE 10: END ===== -->
+    <div class="slide cover" style="background: radial-gradient(ellipse at 50% 50%, rgba(168,85,247,0.08) 0%, transparent 60%);">
+      <div class="grid-bg"></div>
+      <h1 style="text-align: center; font-size: 3rem;">
+        The best study tool<br>is the one <span style="background: linear-gradient(135deg, var(--blue), var(--purple)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">you build yourself</span>.
+      </h1>
+      <div style="width: 60px; height: 3px; background: linear-gradient(90deg, var(--blue), var(--purple)); border-radius: 2px; margin: 28px auto;"></div>
+      <p class="text-2" style="font-size: 1.1rem;">Harry Huang · onezion12344</p>
+      <p class="text-3" style="font-size: 0.85rem; margin-top: 8px;">HKU BA&amp;BEng(AI&amp;DataSc) · Year 1</p>
+    </div>
+
+  </div>
+
+  <div class="slide-counter"><span id="current">1</span> / <span id="total"></span></div>
+  <div class="nav-hint">← → Space | F fullscreen | Esc exit</div>
+
+  <script>
+    const slides = document.querySelectorAll('.slide');
+    let currentSlide = 0;
+    document.getElementById('total').textContent = slides.length;
+
+    function showSlide(n) {
+      slides[currentSlide].classList.remove('active');
+      currentSlide = (n + slides.length) % slides.length;
+      slides[currentSlide].classList.add('active');
+      document.getElementById('current').textContent = currentSlide + 1;
+      document.getElementById('progress').style.width = ((currentSlide + 1) / slides.length * 100) + '%';
+    }
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowRight' || e.key === ' ') { e.preventDefault(); showSlide(currentSlide + 1); }
+      if (e.key === 'ArrowLeft') { e.preventDefault(); showSlide(currentSlide - 1); }
+      if (e.key === 'f') document.documentElement.requestFullscreen?.();
+      if (e.key === 'Escape') document.exitFullscreen?.();
+    });
+
+    document.querySelector('.deck').addEventListener('click', (e) => {
+      e.clientX / window.innerWidth > 0.5 ? showSlide(currentSlide + 1) : showSlide(currentSlide - 1);
+    });
+  </script>
+</body>
+</html>

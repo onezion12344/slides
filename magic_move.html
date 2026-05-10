@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Magic Move Demo</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    :root {
+      --bg: #0a0a0f;
+      --surface: #14141e;
+      --text: #e8e8f0;
+      --text-2: #8888a0;
+      --blue: #4f8fff;
+      --purple: #a855f7;
+      --green: #34d399;
+      --orange: #fb923c;
+      --pink: #f472b6;
+      --cyan: #22d3ee;
+    }
+    body { background: var(--bg); font-family: 'Inter', system-ui, sans-serif; color: var(--text); overflow: hidden; width: 100vw; height: 100vh; }
+    .scene { width: 100%; height: 100%; position: relative; }
+
+    /* Elements with shared identity for FLIP transitions */
+    .el {
+      position: absolute;
+      border-radius: 14px;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 700;
+      will-change: transform, width, height, border-radius, opacity;
+      transition: all 0.8s cubic-bezier(0.22, 1, 0.36, 1);
+      border: 1px solid rgba(255,255,255,0.08);
+      cursor: default;
+    }
+    .el .el-icon { font-size: 1.6rem; pointer-events: none; }
+    .el .el-text { font-size: 0.78rem; pointer-events: none; white-space: nowrap; }
+    .el .el-detail { font-size: 0.65rem; color: var(--text-2); pointer-events: none; white-space: nowrap; display: none; }
+
+    /* === SCENE 1: Pipeline (horizontal) === */
+    .scene-1 .el {
+      flex-direction: column; gap: 6px;
+      width: 110px; height: 110px;
+      top: calc(50% - 55px);
+    }
+    .scene-1 .el-0 { left: calc(50% - 400px); background: rgba(79,143,255,0.1); }
+    .scene-1 .el-1 { left: calc(50% - 240px); background: rgba(168,85,247,0.1); }
+    .scene-1 .el-2 { left: calc(50% - 80px);  background: rgba(52,211,153,0.1); }
+    .scene-1 .el-3 { left: calc(50% + 80px);  background: rgba(251,146,60,0.1); }
+    .scene-1 .el-4 { left: calc(50% + 240px); background: rgba(244,114,182,0.1); }
+
+    .scene-1 .el .el-icon { font-size: 2rem; }
+    .scene-1 .el .el-text { color: var(--text); }
+
+    /* Arrows between nodes in scene 1 */
+    .arrow {
+      position: absolute; top: calc(50% - 1px); height: 2px;
+      background: rgba(255,255,255,0.15); opacity: 0;
+      transition: opacity 0.4s 0.3s ease;
+    }
+    .scene-1 .arrow { opacity: 1; }
+    .arrow-0 { left: calc(50% - 290px); width: 40px; }
+    .arrow-1 { left: calc(50% - 130px); width: 40px; }
+    .arrow-2 { left: calc(50% + 30px);  width: 40px; }
+    .arrow-3 { left: calc(50% + 190px); width: 40px; }
+    .arrow::after {
+      content: ''; position: absolute; right: -1px; top: -3px;
+      border: 4px solid transparent; border-left: 6px solid rgba(255,255,255,0.15);
+    }
+
+    /* === SCENE 2: Grid cards === */
+    .scene-2 .el {
+      flex-direction: row; gap: 16px;
+      padding: 0 24px;
+      border: 1px solid rgba(255,255,255,0.06);
+    }
+    .scene-2 .el .el-icon { font-size: 1.8rem; }
+    .scene-2 .el .el-text { font-size: 1rem; }
+    .scene-2 .el .el-detail { display: block; }
+
+    .scene-2 .el-0 { left: calc(50% - 300px); top: calc(50% - 180px); width: 280px; height: 100px; background: rgba(79,143,255,0.08); }
+    .scene-2 .el-1 { left: calc(50% + 20px);  top: calc(50% - 180px); width: 280px; height: 100px; background: rgba(168,85,247,0.08); }
+    .scene-2 .el-2 { left: calc(50% - 300px); top: calc(50% - 60px);  width: 280px; height: 100px; background: rgba(52,211,153,0.08); }
+    .scene-2 .el-3 { left: calc(50% + 20px);  top: calc(50% - 60px);  width: 280px; height: 100px; background: rgba(251,146,60,0.08); }
+    .scene-2 .el-4 { left: calc(50% - 140px); top: calc(50% + 60px);  width: 280px; height: 100px; background: rgba(244,114,182,0.08); }
+
+    /* === SCENE 3: Stack (vertical) === */
+    .scene-3 .el {
+      flex-direction: row; gap: 16px;
+      padding: 0 32px;
+      border-radius: 12px;
+    }
+    .scene-3 .el .el-icon { font-size: 1.4rem; }
+    .scene-3 .el .el-text { font-size: 0.95rem; flex: 1; }
+    .scene-3 .el .el-detail { display: block; text-align: right; }
+
+    .scene-3 .el-0 { left: calc(50% - 250px); top: calc(50% - 160px); width: 500px; height: 52px; background: rgba(79,143,255,0.1); }
+    .scene-3 .el-1 { left: calc(50% - 250px); top: calc(50% - 100px); width: 500px; height: 52px; background: rgba(168,85,247,0.08); }
+    .scene-3 .el-2 { left: calc(50% - 250px); top: calc(50% - 40px);  width: 500px; height: 52px; background: rgba(52,211,153,0.08); }
+    .scene-3 .el-3 { left: calc(50% - 250px); top: calc(50% + 20px);  width: 500px; height: 52px; background: rgba(251,146,60,0.08); }
+    .scene-3 .el-4 { left: calc(50% - 250px); top: calc(50% + 80px);  width: 500px; height: 52px; background: rgba(244,114,182,0.08); }
+
+    /* === SCENE 4: Concentric ring === */
+    .scene-4 .el {
+      border-radius: 50%;
+    }
+    .scene-4 .el .el-text { font-size: 0.7rem; }
+    .scene-4 .el .el-detail { display: none; }
+    .scene-4 .el .el-icon { font-size: 1.2rem; }
+
+    .scene-4 .el-0 { left: calc(50% - 30px);  top: calc(50% - 200px); width: 60px; height: 60px; background: rgba(79,143,255,0.15); }
+    .scene-4 .el-1 { left: calc(50% + 130px); top: calc(50% - 60px);  width: 60px; height: 60px; background: rgba(168,85,247,0.15); }
+    .scene-4 .el-2 { left: calc(50% + 70px);  top: calc(50% + 120px); width: 60px; height: 60px; background: rgba(52,211,153,0.15); }
+    .scene-4 .el-3 { left: calc(50% - 130px); top: calc(50% + 120px); width: 60px; height: 60px; background: rgba(251,146,60,0.15); }
+    .scene-4 .el-4 { left: calc(50% - 190px); top: calc(50% - 60px);  width: 60px; height: 60px; background: rgba(244,114,182,0.15); }
+
+    /* Center hub in scene 4 */
+    .hub {
+      position: absolute; left: calc(50% - 40px); top: calc(50% - 40px);
+      width: 80px; height: 80px; border-radius: 50%;
+      background: linear-gradient(135deg, rgba(79,143,255,0.2), rgba(168,85,247,0.2));
+      border: 1.5px solid rgba(79,143,255,0.3);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 2rem;
+      opacity: 0; transition: opacity 0.5s 0.3s ease;
+    }
+    .scene-4 .hub { opacity: 1; }
+
+    /* Ring lines in scene 4 */
+    .ring-line {
+      position: absolute; left: 50%; top: 50%;
+      width: 1px; height: 120px; background: rgba(255,255,255,0.06);
+      transform-origin: top center;
+      opacity: 0; transition: opacity 0.4s 0.4s ease;
+    }
+    .scene-4 .ring-line { opacity: 1; }
+    .ring-line:nth-child(1) { transform: rotate(0deg); }
+    .ring-line:nth-child(2) { transform: rotate(72deg); }
+    .ring-line:nth-child(3) { transform: rotate(144deg); }
+    .ring-line:nth-child(4) { transform: rotate(216deg); }
+    .ring-line:nth-child(5) { transform: rotate(288deg); }
+
+    /* === SCENE 5: App icon (all merge) === */
+    .scene-5 .el {
+      border-radius: 24px;
+      opacity: 0;
+      transform: scale(0);
+    }
+    .scene-5 .el .el-icon { font-size: 1.2rem; }
+    .scene-5 .el .el-text { display: none; }
+    .scene-5 .el .el-detail { display: none; }
+
+    .scene-5 .el-0 { left: calc(50% - 16px); top: calc(50% - 16px); width: 32px; height: 32px; background: rgba(79,143,255,0.3); border-radius: 50%; }
+    .scene-5 .el-1 { left: calc(50% - 16px); top: calc(50% - 16px); width: 32px; height: 32px; background: rgba(168,85,247,0.3); border-radius: 50%; }
+    .scene-5 .el-2 { left: calc(50% - 16px); top: calc(50% - 16px); width: 32px; height: 32px; background: rgba(52,211,153,0.3); border-radius: 50%; }
+    .scene-5 .el-3 { left: calc(50% - 16px); top: calc(50% - 16px); width: 32px; height: 32px; background: rgba(251,146,60,0.3); border-radius: 50%; }
+    .scene-5 .el-4 { left: calc(50% - 16px); top: calc(50% - 16px); width: 32px; height: 32px; background: rgba(244,114,182,0.3); border-radius: 50%; }
+
+    /* App icon box */
+    .app-box {
+      position: absolute; left: calc(50% - 60px); top: calc(50% - 60px);
+      width: 120px; height: 120px; border-radius: 28px;
+      background: linear-gradient(135deg, rgba(79,143,255,0.15), rgba(168,85,247,0.15));
+      border: 2px solid rgba(79,143,255,0.25);
+      display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px;
+      opacity: 0; transform: scale(0);
+      transition: all 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    .scene-5 .app-box { opacity: 1; transform: scale(1); transition-delay: 0.6s; }
+    .app-box .app-emoji { font-size: 2.5rem; }
+    .app-box .app-label { font-size: 0.7rem; font-weight: 700; letter-spacing: 0.05em; }
+
+    /* Glow behind app icon */
+    .app-glow {
+      position: absolute; left: calc(50% - 80px); top: calc(50% - 80px);
+      width: 160px; height: 160px; border-radius: 50%;
+      background: radial-gradient(circle, rgba(79,143,255,0.15), transparent 70%);
+      opacity: 0; transition: opacity 0.6s 0.5s ease;
+    }
+    .scene-5 .app-glow { opacity: 1; }
+
+    /* Controls */
+    .controls {
+      position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%);
+      display: flex; gap: 12px; z-index: 100;
+    }
+    .btn {
+      padding: 10px 24px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.1);
+      background: var(--surface); color: var(--text); font-family: 'Inter', sans-serif;
+      font-size: 0.85rem; font-weight: 600; cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .btn:hover { border-color: var(--blue); color: var(--blue); }
+    .btn.primary { background: rgba(79,143,255,0.15); border-color: rgba(79,143,255,0.3); color: var(--blue); }
+    .btn:active { transform: scale(0.97); }
+    .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    /* Phase indicator */
+    .phase-dots {
+      position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%);
+      display: flex; gap: 8px; z-index: 100;
+    }
+    .phase-dot {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: rgba(255,255,255,0.1);
+      transition: all 0.3s ease;
+    }
+    .phase-dot.active { background: var(--blue); transform: scale(1.3); }
+
+    /* Scene label */
+    .scene-label {
+      position: fixed; top: 30px; left: 50%; transform: translateX(-50%);
+      font-size: 1.1rem; font-weight: 700; z-index: 100;
+      transition: opacity 0.3s ease;
+    }
+    .scene-sublabel {
+      position: fixed; top: 58px; left: 50%; transform: translateX(-50%);
+      font-size: 0.82rem; color: var(--text-2); z-index: 100;
+      transition: opacity 0.3s ease;
+    }
+
+    .grid-bg {
+      position: absolute; inset: 0; opacity: 0.02;
+      background-image: radial-gradient(circle, var(--text) 1px, transparent 1px);
+      background-size: 40px 40px; pointer-events: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="scene scene-1" id="scene">
+    <div class="grid-bg"></div>
+
+    <!-- Shared elements (same identity, different positions per scene) -->
+    <div class="el el-0" id="el-0">
+      <span class="el-icon">📚</span>
+      <span class="el-text">Capture</span>
+      <span class="el-detail">Lecture · PDF · Web · Voice</span>
+    </div>
+    <div class="el el-1" id="el-1">
+      <span class="el-icon">🧠</span>
+      <span class="el-text">Process</span>
+      <span class="el-detail">Notes · Summary · Graph</span>
+    </div>
+    <div class="el el-2" id="el-2">
+      <span class="el-icon">💬</span>
+      <span class="el-text">Practice</span>
+      <span class="el-detail">Quiz · Dialogue · Socratic</span>
+    </div>
+    <div class="el el-3" id="el-3">
+      <span class="el-icon">📊</span>
+      <span class="el-text">Evaluate</span>
+      <span class="el-detail">Analysis · Feedback · Calibrate</span>
+    </div>
+    <div class="el el-4" id="el-4">
+      <span class="el-icon">🔁</span>
+      <span class="el-text">Iterate</span>
+      <span class="el-detail">Spaced Rep · Optimize · Compound</span>
+    </div>
+
+    <!-- Arrows (scene 1 only) -->
+    <div class="arrow arrow-0" id="arr-0"></div>
+    <div class="arrow arrow-1" id="arr-1"></div>
+    <div class="arrow arrow-2" id="arr-2"></div>
+    <div class="arrow arrow-3" id="arr-3"></div>
+
+    <!-- Ring lines (scene 4 only) -->
+    <div class="ring-line" id="rl-0"></div>
+    <div class="ring-line" id="rl-1"></div>
+    <div class="ring-line" id="rl-2"></div>
+    <div class="ring-line" id="rl-3"></div>
+    <div class="ring-line" id="rl-4"></div>
+
+    <!-- Hub (scene 4 only) -->
+    <div class="hub" id="hub">🎓</div>
+
+    <!-- App icon (scene 5 only) -->
+    <div class="app-glow" id="appGlow"></div>
+    <div class="app-box" id="appBox">
+      <div class="app-emoji">🎓</div>
+      <div class="app-label">STUDY OS</div>
+    </div>
+  </div>
+
+  <div class="scene-label" id="sceneLabel">Pipeline</div>
+  <div class="scene-sublabel" id="sceneSublabel">5 stages, left to right</div>
+
+  <div class="phase-dots" id="dots"></div>
+
+  <div class="controls">
+    <button class="btn" onclick="goTo(0)">↺</button>
+    <button class="btn" onclick="prev()">← Prev</button>
+    <button class="btn primary" onclick="next()">Next →</button>
+    <button class="btn" onclick="playAll()">▶ All</button>
+  </div>
+
+  <script>
+    const sceneEl = document.getElementById('scene');
+    const sceneLabel = document.getElementById('sceneLabel');
+    const sceneSublabel = document.getElementById('sceneSublabel');
+    const scenes = ['scene-1', 'scene-2', 'scene-3', 'scene-4', 'scene-5'];
+    const labels = [
+      ['Pipeline', '5 stages, left to right'],
+      ['Card Grid', 'Each stage gets its own card with details'],
+      ['Stack Layers', 'Bottom-up architecture view'],
+      ['Radial Hub', 'All roads lead to the center'],
+      ['App Icon', 'Everything converges into one product'],
+    ];
+    let current = 0;
+    let isPlaying = false;
+
+    // Build dots
+    const dotsEl = document.getElementById('dots');
+    scenes.forEach((_, i) => {
+      const d = document.createElement('div');
+      d.className = 'phase-dot' + (i === 0 ? ' active' : '');
+      dotsEl.appendChild(d);
+    });
+    const dots = dotsEl.querySelectorAll('.phase-dot');
+
+    function goTo(n) {
+      if (n < 0 || n >= scenes.length) return;
+      scenes.forEach(s => sceneEl.classList.remove(s));
+      sceneEl.classList.add(scenes[n]);
+      dots.forEach(d => d.classList.remove('active'));
+      dots[n].classList.add('active');
+      sceneLabel.textContent = labels[n][0];
+      sceneSublabel.textContent = labels[n][1];
+      current = n;
+    }
+
+    function next() { goTo(Math.min(current + 1, scenes.length - 1)); }
+    function prev() { goTo(Math.max(current - 1, 0)); }
+
+    function playAll() {
+      if (isPlaying) return;
+      isPlaying = true;
+      goTo(0);
+      let i = 1;
+      const timer = setInterval(() => {
+        if (i >= scenes.length) { clearInterval(timer); isPlaying = false; return; }
+        goTo(i);
+        i++;
+      }, 1500);
+    }
+
+    // Keyboard
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowRight' || e.key === ' ') { e.preventDefault(); next(); }
+      if (e.key === 'ArrowLeft') { e.preventDefault(); prev(); }
+      if (e.key === 'f') document.documentElement.requestFullscreen?.();
+      if (e.key === 'Escape') document.exitFullscreen?.();
+    });
+
+    // Click to advance
+    document.addEventListener('click', (e) => {
+      if (e.target.closest('.controls')) return;
+      e.clientX / window.innerWidth > 0.5 ? next() : prev();
+    });
+
+    // Init
+    goTo(0);
+  </script>
+</body>
+</html>
