@@ -7,49 +7,57 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { background: #0a0a0f; color: #e8e8f0; font-family: 'Inter', system-ui, sans-serif; min-height: 100vh; display: flex; align-items: center; justify-content: center; }
-    .container { max-width: 600px; padding: 40px; }
-    h1 { font-size: 2rem; font-weight: 800; margin-bottom: 8px; }
-    .sub { color: #8888a0; font-size: 0.9rem; margin-bottom: 32px; }
-    .card { display: block; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.06); border-radius: 12px; padding: 20px 24px; margin-bottom: 12px; text-decoration: none; color: inherit; transition: all 0.2s ease; }
-    .card:hover { border-color: #4f8fff; background: rgba(79,143,255,0.06); transform: translateY(-2px); }
-    .card h2 { font-size: 1.1rem; font-weight: 700; margin-bottom: 4px; }
-    .card p { color: #8888a0; font-size: 0.85rem; }
-    .card .tag { display: inline-block; font-size: 0.7rem; padding: 2px 8px; border-radius: 6px; margin-right: 6px; }
-    .tag-blue { background: rgba(79,143,255,0.15); color: #4f8fff; }
-    .tag-green { background: rgba(52,211,153,0.15); color: #34d399; }
-    .tag-purple { background: rgba(168,85,247,0.15); color: #a855f7; }
-    .tag-orange { background: rgba(251,146,60,0.15); color: #fb923c; }
+    body { background: #0a0a0f; color: #e8e8f0; font-family: 'Inter', system-ui, sans-serif; min-height: 100vh; padding: 60px 20px; }
+    .container { max-width: 640px; margin: 0 auto; }
+    h1 { font-size: 2rem; font-weight: 800; margin-bottom: 6px; }
+    .sub { color: #8888a0; font-size: 0.9rem; margin-bottom: 36px; }
+    .section-label { font-size: 0.75rem; color: #555570; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 12px; margin-top: 28px; }
+    .section-label:first-of-type { margin-top: 0; }
+    .card { display: block; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06); border-radius: 12px; padding: 18px 22px; margin-bottom: 10px; text-decoration: none; color: inherit; transition: all 0.2s ease; }
+    .card:hover { border-color: #4f8fff; background: rgba(79,143,255,0.05); transform: translateY(-1px); }
+    .card h2 { font-size: 1rem; font-weight: 700; margin-bottom: 3px; }
+    .card p { color: #8888a0; font-size: 0.82rem; }
+    .card .tag { display: inline-block; font-size: 0.65rem; padding: 2px 7px; border-radius: 5px; margin-right: 5px; margin-top: 6px; }
+    .tag-blue { background: rgba(79,143,255,0.12); color: #4f8fff; }
+    .tag-green { background: rgba(52,211,153,0.12); color: #34d399; }
+    .tag-purple { background: rgba(168,85,247,0.12); color: #a855f7; }
+    .tag-orange { background: rgba(251,146,60,0.12); color: #fb923c; }
+    .footer { margin-top: 48px; padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.06); color: #555570; font-size: 0.75rem; }
+    .footer a { color: #4f8fff; text-decoration: none; }
   </style>
 </head>
 <body>
   <div class="container">
     <h1>Slides</h1>
-    <p class="sub">HTML presentations by Harry Huang · onezion12344</p>
-    <a class="card" href="HKU_AI_Degree_Comparison.html">
+    <p class="sub">HTML presentations by Harry Huang</p>
+
+    <div class="section-label">摘星 CaptureStar</div>
+    <a class="card" href="capturestar/HKU_AI_Degree_Comparison.html">
       <h2>HKU AI Degree Comparison</h2>
-      <p>BASc vs BA&BEng vs BEng — 9 slides with animated transitions</p>
-      <span class="tag tag-blue">comparison</span>
-      <span class="tag tag-green">HKU</span>
+      <p>BASc vs BA&amp;BEng vs BEng — 学分结构、课程路径、5 大 Concentration 对比</p>
+      <span class="tag tag-blue">comparison</span><span class="tag tag-green">HKU</span>
     </a>
-    <a class="card" href="Academic_Pipeline.html">
+    <a class="card" href="capturestar/Academic_Pipeline.html">
       <h2>Academic Pipeline → App</h2>
-      <p>From lecture notes to one product — 10 slides with stagger animations</p>
-      <span class="tag tag-purple">pipeline</span>
-      <span class="tag tag-orange">product</span>
+      <p>Capture → Process → Practice → Evaluate → Iterate → Ship</p>
+      <span class="tag tag-purple">pipeline</span><span class="tag tag-orange">product</span>
     </a>
-    <a class="card" href="packing_animation.html">
+
+    <div class="section-label">Demos</div>
+    <a class="card" href="demos/packing_animation.html">
       <h2>Packing Animation</h2>
-      <p>5 pipeline stages pack into one app icon — interactive state machine</p>
-      <span class="tag tag-purple">animation</span>
-      <span class="tag tag-blue">interactive</span>
+      <p>5 环节打包成 APP 图标 — 状态机动画，可打断/回退/自动播放</p>
+      <span class="tag tag-purple">animation</span><span class="tag tag-blue">interactive</span>
     </a>
-    <a class="card" href="magic_move.html">
+    <a class="card" href="demos/magic_move.html">
       <h2>Magic Move Demo</h2>
-      <p>Same elements morph across 5 layouts — FLIP transitions</p>
-      <span class="tag tag-orange">magic move</span>
-      <span class="tag tag-green">FLIP</span>
+      <p>同名对象在 5 种布局间 FLIP 变形 — 浏览器版 Keynote Magic Move</p>
+      <span class="tag tag-orange">magic move</span><span class="tag tag-green">FLIP</span>
     </a>
+
+    <div class="footer">
+      <a href="https://github.com/onezion12344/slides">GitHub</a> · Deployed via GitHub Pages
+    </div>
   </div>
 </body>
 </html>
