@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>The Knowledge Format — Obsidian + Git + AI</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Noto+Sans+SC:wght@400;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0a0a0f; --surface: #12121a; --border: rgba(255,255,255,0.06);
+      --text: #e8e8f0; --text-2: #8888a0; --text-3: #555570;
+      --blue: #4f8fff; --purple: #a855f7; --green: #34d399;
+      --orange: #fb923c; --pink: #f472b6; --cyan: #22d3ee;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body { background: var(--bg); font-family: 'Inter', 'Noto Sans SC', system-ui, sans-serif; color: var(--text); line-height: 1.7; }
+    .reveal { opacity: 0; transform: translateY(30px); transition: all 0.7s cubic-bezier(0.22,1,0.36,1); }
+    .reveal.visible { opacity: 1; transform: translateY(0); }
+    .reveal-scale { opacity: 0; transform: scale(0.92); transition: all 0.6s cubic-bezier(0.34,1.56,0.64,1); }
+    .reveal-scale.visible { opacity: 1; transform: scale(1); }
+    .stagger > * { opacity: 0; transform: translateY(20px); transition: all 0.5s cubic-bezier(0.22,1,0.36,1); }
+    .stagger.visible > *:nth-child(1) { opacity: 1; transform: translateY(0); transition-delay: 0.1s; }
+    .stagger.visible > *:nth-child(2) { opacity: 1; transform: translateY(0); transition-delay: 0.2s; }
+    .stagger.visible > *:nth-child(3) { opacity: 1; transform: translateY(0); transition-delay: 0.3s; }
+    .stagger.visible > *:nth-child(4) { opacity: 1; transform: translateY(0); transition-delay: 0.4s; }
+    .stagger.visible > *:nth-child(5) { opacity: 1; transform: translateY(0); transition-delay: 0.5s; }
+    .stagger.visible > *:nth-child(6) { opacity: 1; transform: translateY(0); transition-delay: 0.6s; }
+    .stagger.visible > *:nth-child(7) { opacity: 1; transform: translateY(0); transition-delay: 0.7s; }
+    .stagger.visible > *:nth-child(8) { opacity: 1; transform: translateY(0); transition-delay: 0.8s; }
+    .grid-bg { position: fixed; inset: 0; opacity: 0.02; z-index: -1; background-image: radial-gradient(circle, var(--text) 1px, transparent 1px); background-size: 40px 40px; pointer-events: none; }
+    .nav { position: fixed; top: 0; left: 0; right: 0; z-index: 100; background: rgba(10,10,15,0.8); backdrop-filter: blur(20px); border-bottom: 1px solid var(--border); padding: 0 40px; height: 56px; display: flex; align-items: center; justify-content: space-between; }
+    .nav-logo { font-weight: 800; font-size: 1rem; }
+    .nav-logo span { color: var(--blue); }
+    .nav-links { display: flex; gap: 24px; }
+    .nav-links a { color: var(--text-2); text-decoration: none; font-size: 0.82rem; font-weight: 500; transition: color 0.2s; }
+    .nav-links a:hover { color: var(--text); }
+    section { padding: 100px 40px; max-width: 1100px; margin: 0 auto; }
+    .section-label { font-size: 0.72rem; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--blue); margin-bottom: 10px; }
+    h2 { font-size: 2.2rem; font-weight: 800; letter-spacing: -0.02em; line-height: 1.15; margin-bottom: 14px; }
+    .lead { font-size: 1.05rem; color: var(--text-2); max-width: 600px; line-height: 1.7; }
+    .hero { min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 100px 40px 60px; position: relative; }
+    .hero::before { content: ''; position: absolute; top: -200px; left: 50%; transform: translateX(-50%); width: 800px; height: 800px; border-radius: 50%; background: radial-gradient(circle, rgba(79,143,255,0.06) 0%, transparent 60%); pointer-events: none; }
+    .hero-badge { display: inline-flex; align-items: center; gap: 8px; padding: 6px 16px; border-radius: 100px; font-size: 0.8rem; font-weight: 600; background: rgba(79,143,255,0.1); border: 1px solid rgba(79,143,255,0.2); color: var(--blue); margin-bottom: 24px; animation: fadeIn 0.6s 0.1s ease both; }
+    .hero h1 { font-size: clamp(2.2rem, 5.5vw, 4rem); font-weight: 900; letter-spacing: -0.03em; line-height: 1.1; max-width: 750px; animation: fadeUp 0.7s 0.2s cubic-bezier(0.22,1,0.36,1) both; }
+    .hero h1 .gradient { background: linear-gradient(135deg, var(--blue), var(--purple)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+    .hero .lead { margin: 20px auto 0; animation: fadeUp 0.6s 0.4s cubic-bezier(0.22,1,0.36,1) both; text-align: center; }
+    .compare-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-top: 36px; }
+    .compare-card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 24px; text-align: center; transition: all 0.3s; }
+    .compare-card:hover { border-color: rgba(255,255,255,0.12); transform: translateY(-3px); }
+    .compare-card .icon { font-size: 2rem; margin-bottom: 10px; }
+    .compare-card h3 { font-size: 1rem; margin-bottom: 6px; }
+    .compare-card p { color: var(--text-2); font-size: 0.82rem; }
+    .compare-card .tag { display: inline-block; margin-top: 8px; padding: 3px 10px; border-radius: 6px; font-size: 0.7rem; font-weight: 600; }
+    .check-list { list-style: none; padding: 0; margin-top: 24px; }
+    .check-list li { display: flex; align-items: center; gap: 12px; padding: 14px 0; border-bottom: 1px solid var(--border); font-size: 0.95rem; }
+    .check-list li:last-child { border-bottom: none; }
+    .check-icon { width: 28px; height: 28px; border-radius: 8px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 0.85rem; font-weight: 700; }
+    .check-yes { background: rgba(52,211,153,0.12); color: var(--green); }
+    .check-label { flex: 1; }
+    .check-note { color: var(--text-3); font-size: 0.82rem; }
+    .flow-container { display: flex; flex-direction: column; align-items: center; gap: 0; margin-top: 36px; max-width: 500px; margin-left: auto; margin-right: auto; }
+    .flow-step { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 18px 24px; width: 100%; display: flex; align-items: center; gap: 16px; transition: all 0.3s; }
+    .flow-step:hover { border-color: rgba(255,255,255,0.12); }
+    .flow-icon { width: 44px; height: 44px; border-radius: 12px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 1.3rem; }
+    .flow-text h4 { font-size: 0.95rem; font-weight: 700; margin-bottom: 2px; }
+    .flow-text p { color: var(--text-2); font-size: 0.8rem; }
+    .flow-arrow { width: 2px; height: 24px; background: var(--border); position: relative; }
+    .flow-arrow::after { content: ''; position: absolute; bottom: -4px; left: -3px; border: 4px solid transparent; border-top: 5px solid var(--text-3); }
+    .big-quote { background: var(--surface); border: 1px solid var(--border); border-radius: 20px; padding: 48px; margin-top: 36px; text-align: center; position: relative; max-width: 700px; margin-left: auto; margin-right: auto; }
+    .big-quote::before { content: '"'; position: absolute; top: 16px; left: 36px; font-size: 4rem; color: var(--blue); opacity: 0.15; font-weight: 900; line-height: 1; }
+    .big-quote blockquote { font-size: 1.15rem; line-height: 1.7; font-style: italic; position: relative; z-index: 1; }
+    .big-quote .attr { margin-top: 16px; color: var(--text-2); font-size: 0.85rem; }
+    .verdict-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 36px; }
+    .verdict-card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 28px; }
+    .verdict-card h3 { font-size: 1rem; margin-bottom: 8px; display: flex; align-items: center; gap: 8px; }
+    .verdict-card p { color: var(--text-2); font-size: 0.88rem; }
+    .cta-section { text-align: center; padding: 100px 40px; position: relative; }
+    .cta-section::before { content: ''; position: absolute; bottom: 0; left: 50%; transform: translateX(-50%); width: 600px; height: 400px; border-radius: 50%; background: radial-gradient(circle, rgba(168,85,247,0.05) 0%, transparent 60%); pointer-events: none; }
+    footer { border-top: 1px solid var(--border); padding: 32px 40px; display: flex; justify-content: space-between; align-items: center; color: var(--text-3); font-size: 0.78rem; max-width: 1100px; margin: 0 auto; }
+    footer a { color: var(--text-2); text-decoration: none; transition: color 0.2s; }
+    footer a:hover { color: var(--blue); }
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(24px); } to { opacity: 1; transform: translateY(0); } }
+    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; } .reveal, .reveal-scale, .stagger > * { opacity: 1; transform: none; } }
+    @media (max-width: 768px) { section { padding: 80px 20px; } .nav { padding: 0 20px; } .nav-links { display: none; } .compare-grid, .verdict-grid { grid-template-columns: 1fr; } h2 { font-size: 1.8rem; } }
+  </style>
+</head>
+<body>
+  <div class="grid-bg"></div>
+  <nav class="nav">
+    <div class="nav-logo">The <span>Knowledge Format</span></div>
+    <div class="nav-links">
+      <a href="#problem">Problem</a><a href="#formats">Formats</a><a href="#winner">Winner</a><a href="#workflow">Workflow</a>
+    </div>
+  </nav>
+
+  <div class="hero">
+    <div class="hero-badge">💡 A discussion between Harry &amp; AI</div>
+    <h1>The best format for <span class="gradient">human + AI collaboration</span></h1>
+    <p class="lead">What format should knowledge live in when humans write and AI transforms? We tested everything — slides, websites, videos, Notion, Jupyter, PDF — and found the answer.</p>
+  </div>
+
+  <section id="problem">
+    <div class="reveal">
+      <div class="section-label">The problem</div>
+      <h2>No single format does everything</h2>
+      <p class="lead">You need something that's readable by humans AND machines, supports rich content AND easy editing, works offline AND shares easily.</p>
+    </div>
+    <div class="compare-grid stagger">
+      <div class="compare-card">
+        <div class="icon">📝</div><h3>Markdown</h3>
+        <p>Human + AI can both edit fast. But no interaction, no rich visuals, hard to share.</p>
+        <span class="tag" style="background: rgba(251,146,60,0.12); color: var(--orange);">edit: ✅ display: ❌</span>
+      </div>
+      <div class="compare-card">
+        <div class="icon">🌐</div><h3>HTML</h3>
+        <p>Rich, interactive, shareable. But verbose to edit by hand. AI generates, humans don't touch.</p>
+        <span class="tag" style="background: rgba(79,143,255,0.12); color: var(--blue);">edit: ⚠️ display: ✅</span>
+      </div>
+      <div class="compare-card">
+        <div class="icon">📄</div><h3>PDF</h3>
+        <p>Universal sharing. But read-only, no interaction, no version control, AI can't easily edit.</p>
+        <span class="tag" style="background: rgba(239,68,68,0.12); color: #ef4444;">edit: ❌ display: ⚠️</span>
+      </div>
+    </div>
+  </section>
+
+  <section id="formats">
+    <div class="reveal">
+      <div class="section-label">Full comparison</div>
+      <h2>Obsidian, scored honestly</h2>
+    </div>
+    <ul class="check-list stagger">
+      <li><div class="check-icon check-yes">✓</div><div class="check-label"><strong>AI Native</strong> — AI can read and write directly</div><div class="check-note">Plain .md files, any tool</div></li>
+      <li><div class="check-icon check-yes">✓</div><div class="check-label"><strong>Human Readable &amp; Editable</strong> — works in any text editor</div><div class="check-note">Vim, VS Code, Notepad</div></li>
+      <li><div class="check-icon check-yes">✓</div><div class="check-label"><strong>Rich Extensions</strong> — LaTeX, diagrams, code, callouts</div><div class="check-note">2000+ plugins</div></li>
+      <li><div class="check-icon check-yes">✓</div><div class="check-label"><strong>Embedded HTML/CSS/SVG</strong> — interactive components inside notes</div><div class="check-note">Animations render inline</div></li>
+      <li><div class="check-icon check-yes">✓</div><div class="check-label"><strong>Whiteboard / Canvas</strong> — visual thinking mode</div><div class="check-note">Built-in + Excalidraw</div></li>
+      <li><div class="check-icon check-yes">✓</div><div class="check-label"><strong>Export to PDF</strong> — native export + Pandoc</div><div class="check-note">One click</div></li>
+      <li><div class="check-icon check-yes">✓</div><div class="check-label"><strong>Searchable &amp; Indexable</strong> — full-text, regex, graph view, tags</div><div class="check-note">Better than most databases</div></li>
+      <li><div class="check-icon check-yes">✓</div><div class="check-label"><strong>Local &amp; Self-Managed</strong> — your files, your machine, your Git</div><div class="check-note">No vendor lock-in</div></li>
+    </ul>
+  </section>
+
+  <section id="winner">
+    <div class="reveal">
+      <div class="section-label">The winner</div>
+      <h2>Obsidian + Git + AI</h2>
+      <p class="lead">One file format. One tool. One version control system. Covers notes, presentations, interaction, sharing, and knowledge graphs.</p>
+    </div>
+    <div class="big-quote reveal-scale">
+      <blockquote>The best knowledge format is the one where humans write naturally, AI transforms richly, and the file is still readable 100 years from now.</blockquote>
+      <div class="attr">— The conclusion of this entire conversation</div>
+    </div>
+    <div class="verdict-grid stagger">
+      <div class="verdict-card"><h3><span style="color: var(--green);">●</span> Markdown = Memory</h3><p>Plain text. Human writes, AI reads. Bidirectional links build knowledge graphs. Git tracks every change. Lasts forever.</p></div>
+      <div class="verdict-card"><h3><span style="color: var(--blue);">●</span> HTML = Presentation</h3><p>CSS animations, interactive components, scroll-triggered reveals. AI generates, humans preview. Browser renders anywhere.</p></div>
+      <div class="verdict-card"><h3><span style="color: var(--purple);">●</span> Obsidian = The Bridge</h3><p>Markdown + inline HTML/CSS/SVG in ONE file. Edit notes and see interactive components side by side. No conversion step.</p></div>
+      <div class="verdict-card"><h3><span style="color: var(--orange);">●</span> Git = Time Machine</h3><p>Every change tracked with meaning. Diff shows exactly what changed. Roll back to any point. Collaborate asynchronously.</p></div>
+    </div>
+  </section>
+
+  <section id="workflow">
+    <div class="reveal">
+      <div class="section-label">The workflow</div>
+      <h2>How it works in practice</h2>
+    </div>
+    <div class="flow-container stagger">
+      <div class="flow-step"><div class="flow-icon" style="background: rgba(79,143,255,0.1);">✏️</div><div class="flow-text"><h4>Human writes in Obsidian</h4><p>Markdown notes, formulas, ideas, structure</p></div></div>
+      <div class="flow-arrow"></div>
+      <div class="flow-step"><div class="flow-icon" style="background: rgba(168,85,247,0.1);">🤖</div><div class="flow-text"><h4>AI enriches the same file</h4><p>Inserts HTML components, charts, animations, summaries</p></div></div>
+      <div class="flow-arrow"></div>
+      <div class="flow-step"><div class="flow-icon" style="background: rgba(52,211,153,0.1);">👀</div><div class="flow-text"><h4>Human previews in Obsidian</h4><p>Rich content renders inline — no browser switch needed</p></div></div>
+      <div class="flow-arrow"></div>
+      <div class="flow-step"><div class="flow-icon" style="background: rgba(251,146,60,0.1);">🔄</div><div class="flow-text"><h4>Git captures every version</h4><p>Diff shows what changed, when, and why</p></div></div>
+      <div class="flow-arrow"></div>
+      <div class="flow-step"><div class="flow-icon" style="background: rgba(244,114,182,0.1);">📤</div><div class="flow-text"><h4>Share when ready</h4><p>Export PDF, deploy HTML to GitHub Pages, or send the .md file</p></div></div>
+    </div>
+  </section>
+
+  <section>
+    <div class="reveal">
+      <div class="section-label">Key insight</div>
+      <h2>Why plain text wins</h2>
+    </div>
+    <div class="verdict-grid stagger">
+      <div class="verdict-card"><h3>🏛️ 100-year durability</h3><p>Word files from 2005 are already hard to open. Plain text from 1970 still works. Markdown is future-proof.</p></div>
+      <div class="verdict-card"><h3>🔗 Zero vendor lock-in</h3><p>Notion could shut down. Google Docs could change pricing. Your .md files are yours, on your disk, in your Git.</p></div>
+      <div class="verdict-card"><h3>🤖 AI-native by nature</h3><p>Every LLM can read and write Markdown. No API needed, no special format. It's the lingua franca of AI.</p></div>
+      <div class="verdict-card"><h3>🧬 Simplest thing that works</h3><p>No database, no server, no subscription. Just files and folders. Git adds history. Obsidian adds visualization.</p></div>
+    </div>
+  </section>
+
+  <section class="cta-section">
+    <div class="reveal">
+      <h2 style="max-width: 600px; margin: 0 auto 16px; font-size: 2.4rem;">
+        Write in <span class="gradient" style="background: linear-gradient(135deg, var(--blue), var(--purple)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">Markdown</span>.<br>
+        Think in <span class="gradient" style="background: linear-gradient(135deg, var(--green), var(--cyan)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">HTML</span>.<br>
+        Remember in <span class="gradient" style="background: linear-gradient(135deg, var(--orange), var(--pink)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">Git</span>.
+      </h2>
+      <p class="lead" style="margin: 0 auto; text-align: center;">The knowledge format that serves both humans and AI.</p>
+    </div>
+  </section>
+
+  <footer>
+    <div>Harry Huang &amp; AI · May 2026</div>
+    <div style="display: flex; gap: 20px;"><a href="https://onezion12344.github.io/slides/">Slides</a><a href="https://github.com/onezion12344">GitHub</a></div>
+  </footer>
+
+  <script>
+    const observer = new IntersectionObserver((entries) => { entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); }); }, { threshold: 0.15, rootMargin: '0px 0px -50px 0px' });
+    document.querySelectorAll('.reveal, .reveal-scale, .stagger').forEach(el => observer.observe(el));
+    const nav = document.querySelector('.nav');
+    window.addEventListener('scroll', () => { nav.style.background = window.scrollY > 50 ? 'rgba(10,10,15,0.95)' : 'rgba(10,10,15,0.8)'; });
+  </script>
+</body>
+</html>
