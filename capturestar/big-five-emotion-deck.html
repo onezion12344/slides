@@ -1,0 +1,748 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Big Five Facets &amp; the Emotional Stereotype</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
+
+:root {
+  --bg: #0a0a0f;
+  --surface: #12121a;
+  --surface-2: #1a1a26;
+  --border: rgba(255,255,255,0.06);
+  --text: #e8e8f0;
+  --text-2: #8888a0;
+  --text-3: #5a5a72;
+  --blue: #4f8fff;
+  --purple: #a855f7;
+  --green: #34d399;
+  --orange: #fb923c;
+  --pink: #f472b6;
+  --coral: #e07050;
+  --teal: #2dd4bf;
+  --amber: #fbbf24;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  overflow: hidden;
+  height: 100vh;
+  width: 100vw;
+}
+
+.deck {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+}
+
+.slide {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 80px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.45s cubic-bezier(0.22,1,0.36,1);
+}
+
+.slide.active {
+  opacity: 1;
+  pointer-events: auto;
+  z-index: 1;
+}
+
+.slide-inner {
+  width: 100%;
+  max-width: 900px;
+}
+
+.pill {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 500;
+  border: 1px solid;
+  margin-bottom: 24px;
+}
+
+.pill-coral { color: var(--coral); border-color: rgba(224,112,80,0.3); background: rgba(224,112,80,0.08); }
+.pill-teal { color: var(--teal); border-color: rgba(45,212,191,0.3); background: rgba(45,212,191,0.08); }
+.pill-purple { color: var(--purple); border-color: rgba(168,85,247,0.3); background: rgba(168,85,247,0.08); }
+
+h1 {
+  font-size: 32px;
+  font-weight: 500;
+  line-height: 1.3;
+  margin-bottom: 16px;
+  color: var(--text);
+}
+
+h2 {
+  font-size: 24px;
+  font-weight: 500;
+  line-height: 1.35;
+  margin-bottom: 12px;
+}
+
+.subtitle {
+  font-size: 16px;
+  color: var(--text-2);
+  margin-bottom: 40px;
+  line-height: 1.5;
+}
+
+/* Three column grid */
+.three-col {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 20px;
+  width: 100%;
+}
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 24px;
+  position: relative;
+  overflow: hidden;
+}
+
+.card-header {
+  font-size: 18px;
+  font-weight: 500;
+  margin-bottom: 6px;
+}
+
+.card-sub {
+  font-size: 13px;
+  color: var(--text-2);
+  margin-bottom: 16px;
+}
+
+.facet-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  padding: 8px 0;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+}
+
+.facet-row:last-child { border-bottom: none; }
+
+.facet-name { font-size: 14px; color: var(--text); }
+.facet-d { font-size: 13px; font-weight: 500; }
+
+.c-coral .card-header { color: var(--coral); }
+.c-teal .card-header { color: var(--teal); }
+.c-purple .card-header { color: var(--purple); }
+
+.c-coral .facet-d { color: var(--coral); }
+.c-teal .facet-d { color: var(--teal); }
+.c-purple .facet-d { color: var(--purple); }
+
+.card-note {
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px dashed rgba(255,255,255,0.06);
+  font-size: 12px;
+  color: var(--text-3);
+  line-height: 1.6;
+}
+
+/* Detail slides */
+.detail-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  width: 100%;
+}
+
+.detail-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 28px;
+}
+
+.detail-card h3 {
+  font-size: 16px;
+  font-weight: 500;
+  margin-bottom: 18px;
+}
+
+.facet-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+}
+
+.facet-item:last-child { border-bottom: none; }
+
+.facet-badge {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.badge-yes { background: rgba(52,211,153,0.12); color: var(--green); }
+.badge-no { background: rgba(255,255,255,0.04); color: var(--text-3); }
+.badge-rev { background: rgba(244,114,182,0.12); color: var(--pink); }
+
+.facet-info { font-size: 13px; line-height: 1.5; }
+.facet-info .label { font-size: 14px; font-weight: 500; color: var(--text); }
+.facet-info .desc { font-size: 12px; color: var(--text-2); margin-top: 2px; }
+
+.insight-box {
+  background: var(--surface-2);
+  border-left: 2px solid;
+  border-radius: 0 12px 12px 0;
+  padding: 16px 20px;
+  margin-top: 20px;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--text-2);
+}
+
+.insight-box strong { color: var(--text); font-weight: 500; }
+
+/* Synthesis table */
+.synth-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+  margin-top: 8px;
+}
+
+.synth-table th {
+  text-align: left;
+  padding: 12px 16px;
+  font-weight: 500;
+  font-size: 13px;
+  color: var(--text-2);
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+}
+
+.synth-table td {
+  padding: 14px 16px;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+  vertical-align: top;
+  line-height: 1.6;
+}
+
+.synth-table td:first-child { font-weight: 500; }
+
+.tag {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 500;
+  margin-right: 4px;
+  margin-bottom: 2px;
+}
+
+.tag-green { background: rgba(52,211,153,0.12); color: var(--green); }
+.tag-coral { background: rgba(224,112,80,0.12); color: var(--coral); }
+.tag-teal { background: rgba(45,212,191,0.12); color: var(--teal); }
+.tag-purple { background: rgba(168,85,247,0.12); color: var(--purple); }
+.tag-gray { background: rgba(255,255,255,0.05); color: var(--text-3); }
+.tag-pink { background: rgba(244,114,182,0.12); color: var(--pink); }
+
+/* Bot slide */
+.bot-note {
+  font-size: 13px;
+  color: var(--text-3);
+  text-align: center;
+}
+
+/* Slide counter */
+.counter {
+  position: fixed;
+  bottom: 32px;
+  right: 48px;
+  font-size: 13px;
+  color: var(--text-3);
+  z-index: 10;
+}
+
+.counter span { color: var(--text-2); }
+
+/* Nav hints */
+.nav-hint {
+  position: fixed;
+  bottom: 32px;
+  left: 48px;
+  font-size: 12px;
+  color: var(--text-3);
+  z-index: 10;
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+body.show-hint .nav-hint { opacity: 1; }
+
+/* Progress bar */
+.progress {
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 2px;
+  background: var(--blue);
+  z-index: 100;
+  transition: width 0.35s cubic-bezier(0.22,1,0.36,1);
+}
+
+/* Stagger animations */
+.slide.active .stagger-1 { animation: fadeUp 0.35s 0.08s cubic-bezier(0.22,1,0.36,1) both; }
+.slide.active .stagger-2 { animation: fadeUp 0.35s 0.18s cubic-bezier(0.22,1,0.36,1) both; }
+.slide.active .stagger-3 { animation: fadeUp 0.35s 0.28s cubic-bezier(0.22,1,0.36,1) both; }
+.slide.active .stagger-4 { animation: fadeUp 0.35s 0.38s cubic-bezier(0.22,1,0.36,1) both; }
+.slide.active .stagger-5 { animation: fadeUp 0.35s 0.48s cubic-bezier(0.22,1,0.36,1) both; }
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+</style>
+</head>
+<body class="show-hint">
+
+<div class="progress" id="progress"></div>
+
+<div class="deck">
+
+<!-- SLIDE 1: Overview -->
+<div class="slide active" id="slide-1">
+  <div class="slide-inner">
+    <div class="pill pill-coral stagger-1">one question, three answers</div>
+    <h1 class="stagger-1">When people say "women are more emotional,"<br>they're conflating three constructs</h1>
+    <p class="subtitle stagger-2">The NEO-PI-R's 30-facet level reveals the stereotype picks out <strong>7 facets</strong> across 3 domains — and systematically ignores others that are equally "emotional."</p>
+
+    <div class="three-col stagger-3">
+      <div class="card c-coral">
+        <div class="card-header">Neuroticism</div>
+        <div class="card-sub">Emotional volatility</div>
+        <div class="facet-row"><span class="facet-name">N1 Anxiety</span><span class="facet-d">d ≈ 0.40</span></div>
+        <div class="facet-row"><span class="facet-name">N3 Depression</span><span class="facet-d">d ≈ 0.30</span></div>
+        <div class="facet-row"><span class="facet-name">N6 Vulnerability</span><span class="facet-d">d ≈ 0.35</span></div>
+        <div class="card-note">How much negative emotion you <em>feel yourself</em></div>
+      </div>
+
+      <div class="card c-teal">
+        <div class="card-header">Extraversion</div>
+        <div class="card-sub">Emotional expressiveness</div>
+        <div class="facet-row"><span class="facet-name">E1 Warmth</span><span class="facet-d">d ≈ 0.40</span></div>
+        <div class="facet-row"><span class="facet-name">E6 Positive Emotions</span><span class="facet-d">d ≈ 0.25</span></div>
+        <div class="card-note">How much emotion you <em>display to others</em></div>
+      </div>
+
+      <div class="card c-purple">
+        <div class="card-header">Agreeableness</div>
+        <div class="card-sub">Empathic emotionality</div>
+        <div class="facet-row"><span class="facet-name">A6 Tender-Mindedness</span><span class="facet-d">d ≈ 0.55</span></div>
+        <div class="facet-row"><span class="facet-name">A3 Altruism</span><span class="facet-d">d ≈ 0.30</span></div>
+        <div class="card-note">How much you're <em>moved by others' emotions</em></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 2: Neuroticism Detail -->
+<div class="slide" id="slide-2">
+  <div class="slide-inner">
+    <div class="pill pill-coral stagger-1">detail: neuroticism</div>
+    <h2 class="stagger-1">Emotional volatility — internalized distress,<br>not externalized hostility</h2>
+    <p class="subtitle stagger-2">Three Neuroticism facets show reliable female advantage. Three others, equally "emotional," do not.</p>
+
+    <div class="detail-grid stagger-3">
+      <div class="detail-card" style="border-color: rgba(52,211,153,0.15);">
+        <h3 style="color:var(--green)">Implicated: ♀ > ♂</h3>
+        <div class="facet-item">
+          <div class="facet-badge badge-yes">N1</div>
+          <div class="facet-info">
+            <div class="label">Anxiety <span style="font-size:11px;color:var(--green)">d ≈ 0.40</span></div>
+            <div class="desc">Worry, fearfulness, low threat threshold</div>
+          </div>
+        </div>
+        <div class="facet-item">
+          <div class="facet-badge badge-yes">N3</div>
+          <div class="facet-info">
+            <div class="label">Depression <span style="font-size:11px;color:var(--green)">d ≈ 0.30</span></div>
+            <div class="desc">Sadness, hopelessness, guilt, low energy</div>
+          </div>
+        </div>
+        <div class="facet-item">
+          <div class="facet-badge badge-yes">N6</div>
+          <div class="facet-info">
+            <div class="label">Vulnerability <span style="font-size:11px;color:var(--green)">d ≈ 0.35</span></div>
+            <div class="desc">Panic under stress, perceived helplessness</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="detail-card">
+        <h3 style="color:var(--text-3)">NOT implicated</h3>
+        <div class="facet-item">
+          <div class="facet-badge badge-no">N2</div>
+          <div class="facet-info">
+            <div class="label">Angry Hostility</div>
+            <div class="desc">Anger is an emotion — but no ♀ advantage</div>
+          </div>
+        </div>
+        <div class="facet-item">
+          <div class="facet-badge badge-no">N5</div>
+          <div class="facet-info">
+            <div class="label">Impulsiveness</div>
+            <div class="desc">Acting on emotion without forethought — null</div>
+          </div>
+        </div>
+        <div class="facet-item">
+          <div class="facet-badge badge-no">N4</div>
+          <div class="facet-info">
+            <div class="label">Self-Consciousness</div>
+            <div class="desc">Shame, embarrassment — weak inconsistent effects</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="insight-box stagger-4" style="border-color: var(--coral);">
+      <strong>Key insight:</strong> The stereotype captures <em>internalized</em> distress (anxiety, sadness, vulnerability) but not <em>externalized</em> distress (anger, impulsivity). This isn't arbitrary cultural filtering — the facet data confirms these genuinely differ.
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 3: Extraversion Detail -->
+<div class="slide" id="slide-3">
+  <div class="slide-inner">
+    <div class="pill pill-teal stagger-1">detail: extraversion</div>
+    <h2 class="stagger-1">Emotional expressiveness — same domain,<br>opposite directions</h2>
+    <p class="subtitle stagger-2">Domain-level Extraversion shows near-zero sex difference — but that's because the facets cancel each other out.</p>
+
+    <div class="detail-grid stagger-3">
+      <div class="detail-card" style="border-color: rgba(52,211,153,0.15);">
+        <h3 style="color:var(--green)">♀ > ♂</h3>
+        <div class="facet-item">
+          <div class="facet-badge badge-yes">E1</div>
+          <div class="facet-info">
+            <div class="label">Warmth <span style="font-size:11px;color:var(--green)">d ≈ 0.40</span></div>
+            <div class="desc">Affection, friendliness, ease forming close bonds</div>
+          </div>
+        </div>
+        <div class="facet-item">
+          <div class="facet-badge badge-yes">E6</div>
+          <div class="facet-info">
+            <div class="label">Positive Emotions <span style="font-size:11px;color:var(--green)">d ≈ 0.25</span></div>
+            <div class="desc">Joy, enthusiasm, laughter, excitement</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="detail-card">
+        <h3 style="color:var(--pink)">♂ > ♀</h3>
+        <div class="facet-item">
+          <div class="facet-badge badge-rev">E3</div>
+          <div class="facet-info">
+            <div class="label">Assertiveness</div>
+            <div class="desc">Taking charge, speaking up — male advantage</div>
+          </div>
+        </div>
+        <div class="facet-item">
+          <div class="facet-badge badge-rev">E5</div>
+          <div class="facet-info">
+            <div class="label">Excitement-Seeking</div>
+            <div class="desc">Thrill-seeking, risk-taking — male advantage</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="insight-box stagger-4" style="border-color: var(--teal);">
+      <strong>Key insight:</strong> Men also are "emotional" in their own way — assertive, thrill-seeking. But those facets don't fit the gender-emotion stereotype, so they're rendered invisible. The domain-level Extraversion score (♂ ≈ ♀) is a <strong>cancellation artifact</strong>.
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 4: Agreeableness Detail -->
+<div class="slide" id="slide-4">
+  <div class="slide-inner">
+    <div class="pill pill-purple stagger-1">detail: agreeableness</div>
+    <h2 class="stagger-1">Empathic emotionality — the single largest<br>facet-level sex difference</h2>
+    <p class="subtitle stagger-2">A6 Tender-Mindedness (d ≈ 0.55) is the largest sex difference in the entire NEO-PI-R. It's fundamentally <em>other-directed</em> emotion.</p>
+
+    <div class="detail-grid stagger-3">
+      <div class="detail-card" style="border-color: rgba(52,211,153,0.15);">
+        <h3 style="color:var(--green)">Implicated</h3>
+        <div class="facet-item">
+          <div class="facet-badge badge-yes">A6</div>
+          <div class="facet-info">
+            <div class="label">Tender-Mindedness <span style="font-size:11px;color:var(--green)">d ≈ 0.55</span></div>
+            <div class="desc">Sympathy, being moved by others' suffering</div>
+          </div>
+        </div>
+        <div class="facet-item">
+          <div class="facet-badge badge-yes">A3</div>
+          <div class="facet-info">
+            <div class="label">Altruism <span style="font-size:11px;color:var(--green)">d ≈ 0.30</span></div>
+            <div class="desc">Active concern for welfare, helpfulness</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="detail-card">
+        <h3 style="color:var(--text-3)">Weaker / more variable</h3>
+        <div class="facet-item">
+          <div class="facet-badge badge-no">A1</div>
+          <div class="facet-info"><div class="label">Trust</div></div>
+        </div>
+        <div class="facet-item">
+          <div class="facet-badge badge-no">A2</div>
+          <div class="facet-info"><div class="label">Straightforwardness</div></div>
+        </div>
+        <div class="facet-item">
+          <div class="facet-badge badge-no">A4</div>
+          <div class="facet-info"><div class="label">Compliance</div></div>
+        </div>
+        <div class="facet-item">
+          <div class="facet-badge badge-no">A5</div>
+          <div class="facet-info"><div class="label">Modesty</div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="insight-box stagger-4" style="border-color: var(--purple);">
+      <strong>Key insight:</strong> The strongest signal isn't about <em>having</em> emotions — it's about being <em>moved by others' emotions</em>. Tender-Mindedness belongs to Agreeableness (pro-social domain), not Neuroticism. This is caregiving-system emotionality, not threat-system emotionality.
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 5: Synthesis -->
+<div class="slide" id="slide-5">
+  <div class="slide-inner">
+    <div class="pill pill-coral stagger-1">synthesis</div>
+    <h2 class="stagger-1">Three distinct systems, one sloppy word</h2>
+
+    <table class="synth-table stagger-2">
+      <thead>
+        <tr>
+          <th>Construct</th>
+          <th>Facets</th>
+          <th>Psychological mechanism</th>
+          <th>Question it answers</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Emotional volatility</td>
+          <td>
+            <span class="tag tag-coral">N1</span>
+            <span class="tag tag-coral">N3</span>
+            <span class="tag tag-coral">N6</span>
+          </td>
+          <td>Threat-detection system hyper-reactivity</td>
+          <td>"How much do you <em>feel</em> negative emotion?"</td>
+        </tr>
+        <tr>
+          <td>Emotional expressiveness</td>
+          <td>
+            <span class="tag tag-teal">E1</span>
+            <span class="tag tag-teal">E6</span>
+          </td>
+          <td>Social reward and affiliation system</td>
+          <td>"How much do you <em>show</em> emotion to others?"</td>
+        </tr>
+        <tr>
+          <td>Empathic emotionality</td>
+          <td>
+            <span class="tag tag-purple">A6</span>
+            <span class="tag tag-purple">A3</span>
+          </td>
+          <td>Caregiving and cooperation system</td>
+          <td>"How much are you <em>moved by others</em>?"</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <p style="margin-top:28px;color:var(--text-2);font-size:14px;line-height:1.6" class="stagger-3">
+      <strong style="color:var(--text)">Why the domain level is the wrong tool.</strong> The 30-facet NEO-PI-R reveals that "emotional" in English conflates three psychologically independent mechanisms. The domain-level Big Five collapses them into noise — Extraversion's facets cancel out; Neuroticism's domain score hides which facets actually differ. To see what's really happening, you need the facet level.
+    </p>
+
+    <div class="insight-box stagger-4" style="border-color: var(--blue); margin-top: 16px;">
+      <strong>The stereotype is signal + compression.</strong> The facet differences are real and cross-culturally robust (Schmitt et al., 2008, 55 nations). But everyday language takes seven specific facet effects, collapses them into "emotional," and erases the facets that point the other way (Angry Hostility, Assertiveness, Excitement-Seeking). Not <em>false</em> — <em>selective</em>.
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 6: What's not in the stereotype -->
+<div class="slide" id="slide-6">
+  <div class="slide-inner">
+    <div class="pill pill-coral stagger-1">what's missing</div>
+    <h2 class="stagger-1">Two entire domains are silent —<br>and that's part of the story</h2>
+
+    <div class="detail-grid stagger-2">
+      <div class="detail-card">
+        <h3 style="color:var(--amber)">Openness to Experience</h3>
+        <p style="font-size:13px;color:var(--text-2);line-height:1.6;margin-bottom:12px;">No facet maps to "emotional." The sex differences here are in <em>cognitive</em> territory.</p>
+        <div class="facet-item">
+          <div class="facet-badge badge-yes">O4</div>
+          <div class="facet-info"><div class="label">Aesthetics — ♀ > ♂</div></div>
+        </div>
+        <div class="facet-item">
+          <div class="facet-badge badge-yes">O3</div>
+          <div class="facet-info"><div class="label">Feelings — ♀ > ♂</div></div>
+        </div>
+        <div class="facet-item">
+          <div class="facet-badge badge-rev">O5</div>
+          <div class="facet-info"><div class="label">Ideas — ♂ > ♀</div></div>
+        </div>
+        <p style="font-size:12px;color:var(--text-3);margin-top:12px;line-height:1.5">O3 "Feelings" (receptivity to inner emotional experience) is arguably emotional — but rarely framed that way in the stereotype. The gender-emotion narrative focuses on <em>expression and distress</em>, not <em>emotional depth as a cognitive value</em>.</p>
+      </div>
+
+      <div class="detail-card">
+        <h3 style="color:var(--blue)">Conscientiousness</h3>
+        <p style="font-size:13px;color:var(--text-2);line-height:1.6;margin-bottom:12px;">The "control" domain. Sex differences are small and inconsistent.</p>
+        <div class="facet-item">
+          <div class="facet-badge badge-yes">C1</div>
+          <div class="facet-info"><div class="label">Competence — ♀ > ♂ (small)</div></div>
+        </div>
+        <div class="facet-item">
+          <div class="facet-badge badge-yes">C3</div>
+          <div class="facet-info"><div class="label">Dutifulness — ♀ > ♂ (small)</div></div>
+        </div>
+        <div class="facet-item">
+          <div class="facet-badge badge-no">C2</div>
+          <div class="facet-info"><div class="label">Order — null</div></div>
+        </div>
+        <p style="font-size:12px;color:var(--text-3);margin-top:12px;line-height:1.5">If "emotional" carried negative connotations of poor self-control, Conscientiousness would be relevant — but it doesn't show the pattern. The stereotype is specifically about <em>affective</em> traits, not <em>control</em> traits.</p>
+      </div>
+    </div>
+
+    <p style="margin-top:20px;font-size:13px;color:var(--text-3);text-align:center;line-height:1.6" class="stagger-3">
+      The selectivity is the point. Of 30 NEO-PI-R facets, only 7 feed the stereotype.<br>
+      23 are irrelevant or contrary — and their silence reveals which "emotional" signals culture amplifies vs. ignores.
+    </p>
+  </div>
+</div>
+
+<!-- SLIDE 7: Summary -->
+<div class="slide" id="slide-7">
+  <div class="slide-inner">
+    <div class="pill pill-coral stagger-1">takeaway</div>
+    <h2 class="stagger-1" style="text-align:center">The stereotype survives because everyday language<br>collapses three distinct mechanisms into one word</h2>
+
+    <div class="three-col stagger-2" style="margin-top:32px">
+      <div class="card c-coral" style="text-align:center;padding:28px 20px">
+        <div style="font-size:36px;margin-bottom:12px;opacity:0.6">🌊</div>
+        <div class="card-header">Volatility</div>
+        <div class="card-sub">Neuroticism</div>
+        <p style="font-size:13px;color:var(--text-2);line-height:1.6;margin-top:8px">Internal states.<br>How much negative emotion you <em>experience</em>.</p>
+      </div>
+
+      <div class="card c-teal" style="text-align:center;padding:28px 20px">
+        <div style="font-size:36px;margin-bottom:12px;opacity:0.6">☀️</div>
+        <div class="card-header">Expressiveness</div>
+        <div class="card-sub">Extraversion</div>
+        <p style="font-size:13px;color:var(--text-2);line-height:1.6;margin-top:8px">External display.<br>How much emotion you <em>show</em>.</p>
+      </div>
+
+      <div class="card c-purple" style="text-align:center;padding:28px 20px">
+        <div style="font-size:36px;margin-bottom:12px;opacity:0.6">🫂</div>
+        <div class="card-header">Empathy</div>
+        <div class="card-sub">Agreeableness</div>
+        <p style="font-size:13px;color:var(--text-2);line-height:1.6;margin-top:8px">Other-directed.<br>How much you're <em>moved by others</em>.</p>
+      </div>
+    </div>
+
+    <div class="insight-box stagger-3" style="border-color: var(--blue); margin-top:28px; text-align:center;">
+      <strong>Use the facet level.</strong> The 30-facet NEO-PI-R is the right resolution for this question.<br>The domain-level Big Five washes out the signal.
+    </div>
+
+    <p class="bot-note stagger-4" style="margin-top:24px">Costa, Terracciano &amp; McCrae (2001) · Schmitt et al. (2008, 55-nation replication) · NEO-PI-R 30-facet model</p>
+  </div>
+</div>
+
+</div>
+
+<div class="counter"><span id="current">1</span> / <span id="total">7</span></div>
+<div class="nav-hint">← → arrows &nbsp;|&nbsp; click to advance</div>
+
+<script>
+const slides = document.querySelectorAll('.slide');
+const total = slides.length;
+let current = 0;
+
+document.getElementById('total').textContent = total;
+
+function show(n) {
+  slides.forEach((s, i) => {
+    s.classList.toggle('active', i === n);
+    if (i === n) {
+      s.querySelectorAll('.stagger-1,.stagger-2,.stagger-3,.stagger-4,.stagger-5').forEach(el => {
+        el.style.animation = 'none';
+        el.offsetHeight;
+        el.style.animation = '';
+      });
+    }
+  });
+  document.getElementById('current').textContent = n + 1;
+  document.getElementById('progress').style.width = ((n + 1) / total * 100) + '%';
+}
+
+function next() { if (current < total - 1) { current++; show(current); } }
+function prev() { if (current > 0) { current--; show(current); } }
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'ArrowRight' || e.key === 'ArrowDown' || e.key === ' ') { e.preventDefault(); next(); }
+  if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') { e.preventDefault(); prev(); }
+});
+
+document.addEventListener('click', e => {
+  if (e.target.closest('a') || e.target.closest('button')) return;
+  next();
+});
+
+document.addEventListener('touchstart', e => {
+  const startX = e.touches[0].clientX;
+  document.addEventListener('touchend', function handler(ev) {
+    document.removeEventListener('touchend', handler);
+    const diff = startX - ev.changedTouches[0].clientX;
+    if (Math.abs(diff) > 40) { diff > 0 ? next() : prev(); }
+  });
+});
+
+document.body.addEventListener('mousemove', () => {
+  document.body.classList.remove('show-hint');
+});
+
+show(0);
+</script>
+
+</body>
+</html>
